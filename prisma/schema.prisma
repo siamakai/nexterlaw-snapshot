@@ -1,0 +1,361 @@
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+}
+
+// ─────────────────────────────────────────────────────────────────────────────
+// ENUMS
+// ─────────────────────────────────────────────────────────────────────────────
+
+enum Vertical {
+  LAW
+  ACCOUNTANCY
+}
+
+enum FirmSizeBand {
+  MICRO      // 1–4 fee-earners
+  SMALL      // 5–20
+  MEDIUM     // 21–50
+  LARGE      // 51–200
+  ENTERPRISE // 200+
+}
+
+enum EUFacingAnswer {
+  YES
+  NO
+  NOT_SURE
+}
+
+enum SelfAssessmentAnswer {
+  YES
+  NO
+  NOT_SURE
+}
+
+enum SubmissionStatus {
+  PENDING
+  SCORING
+  RETRIEVING
+  GENERATING
+  RENDERING_PDF
+  SENDING_EMAIL
+  COMPLETE
+  FAILED
+  REVIEW_REQUIRED
+}
+
+enum KnowledgeBaseCategory {
+  REGULATORY_GUIDANCE
+  USE_CASE_LIBRARY
+  RISK_LIBRARY
+  CONDITIONAL_EU_LAYER
+  TOOL_CATEGORIES
+}
+
+enum EmailSequenceDay {
+  DAY_0
+  DAY_3
+  DAY_7
+}
+
+enum EmailStatus {
+  PENDING
+  SENT
+  FAILED
+  BOUNCED
+}
+
+enum ScoreBandLabel {
+  EXPOSED
+  DEVELOPING
+  IN_CONTROL
+}
+
+// ─────────────────────────────────────────────────────────────────────────────
+// CORE LEAD + SUBMISSION
+// ─────────────────────────────────────────────────────────────────────────────
+
+model Lead {
+  id             String    @id @default(cuid())
+  firmName       String
+  firmWebsite    String
+  city           String
+  country        String    @default("United Kingdom")
+  workEmail      String
+  consentGiven   Boolean   @default(false)
+  consentAt      DateTime?
+  privacyVersion String    @default("1.0")
+  crmTagged      Boolean   @default(false)
+  crmTaggedAt    DateTime?
+  createdAt      DateTime  @default(now())
+  updatedAt      DateTime  @updatedAt
+
+  submissions Submission[]
+  emailLogs   EmailLog[]
+
+  @@index([workEmail])
+  @@index([createdAt])
+}
+
+model Submission {
+  id     String @id @default(cuid())
+  leadId String
+  lead   Lead   @relation(fields: [leadId], references: [id], onDelete: Restrict)
+
+  // Intake
+  practiceTypes String[]     // slugs from PracticeType
+  firmSize      FirmSizeBand
+  euFacing      EUFacingAnswer
+  vertical      Vertical       @default(LAW)
+
+  // Self-assessment answers (Q1–Q10 map to CLEAR TRUST dimensions in order)
+  answerCompliance      SelfAssessmentAnswer
+  answerLiteracy        SelfAssessmentAnswer
+  answerExplainability  SelfAssessmentAnswer
+  answerAccountability  SelfAssessmentAnswer
+  answerRights          SelfAssessmentAnswer
+  answerTransparency    SelfAssessmentAnswer
+  answerReliability     SelfAssessmentAnswer
+  answerUsageGovernance SelfAssessmentAnswer
+  answerSecurity        SelfAssessmentAnswer
+  answerTraceability    SelfAssessmentAnswer
+
+  // Computed scores (0–100 per dimension, null until scoring runs)
+  scoreCompliance       Float?
+  scoreLiteracy         Float?
+  scoreExplainability   Float?
+  scoreAccountability   Float?
+  scoreRights           Float?
+  scoreTransparency     Float?
+  scoreReliability      Float?
+  scoreUsageGovernance  Float?
+  scoreSecurity         Float?
+  scoreTraceability     Float?
+  scoreHeadline         Float?
+  scoreBand             ScoreBandLabel?
+
+  // Generation pipeline
+  status         SubmissionStatus @default(PENDING)
+  pdfUrl         String?
+  pdfGeneratedAt DateTime?
+  generatedAt    DateTime?
+  failureReason  String?
+  retryCount     Int              @default(0)
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  report    GeneratedReport?
+  emailLogs EmailLog[]
+
+  @@index([leadId])
+  @@index([status])
+  @@index([firmSize])
+  @@index([scoreBand])
+  @@index([createdAt])
+  @@index([firmSize, scoreBand])
+}
+
+// ─────────────────────────────────────────────────────────────────────────────
+// KNOWLEDGE BASE
+// ─────────────────────────────────────────────────────────────────────────────
+
+model KnowledgeBaseEntry {
+  id                     String                @id @default(cuid())
+  category               KnowledgeBaseCategory
+  title                  String
+  bodyText               String                @db.Text
+  appliedToPracticeTypes String[]
+  appliedToFirmSizes     FirmSizeBand[]
+  sourceReference        String?
+  lastReviewedDate       DateTime
+  weight                 Float                 @default(1.0)
+  isActive               Boolean               @default(true)
+  vertical               Vertical              @default(LAW)
+  isEuLayerEntry         Boolean               @default(false)
+  createdAt              DateTime              @default(now())
+  updatedAt              DateTime              @updatedAt
+  createdBy              String?
+  updatedBy              String?
+
+  @@index([category])
+  @@index([vertical])
+  @@index([isActive])
+  @@index([lastReviewedDate])
+}
+
+// ─────────────────────────────────────────────────────────────────────────────
+// PRACTICE TYPES
+// ─────────────────────────────────────────────────────────────────────────────
+
+model PracticeType {
+  id        String   @id @default(cuid())
+  slug      String   @unique
+  label     String
+  vertical  Vertical @default(LAW)
+  isActive  Boolean  @default(true)
+  sortOrder Int      @default(0)
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  @@index([vertical, isActive])
+}
+
+// ─────────────────────────────────────────────────────────────────────────────
+// CLEAR TRUST SCORING — configurable in admin, never hard-coded
+// ─────────────────────────────────────────────────────────────────────────────
+
+model ClearTrustDimension {
+  id             String   @id @default(cuid())
+  letter         String   // C, L, E, A, R, T, R, U, S, T
+  name           String   // "Compliance", "Literacy", etc.
+  description    String   @db.Text
+  questionText   String   @db.Text
+  sortOrder      Int      // 1–10 maps Q1–Q10
+  vertical       Vertical @default(LAW)
+  regulatorLabel String   @default("SRA") // variable for Phase 3 accountancy
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  scoringRules ScoringRule[]
+
+  @@unique([sortOrder, vertical])
+}
+
+model ScoringRule {
+  id               String              @id @default(cuid())
+  dimensionId      String
+  dimension        ClearTrustDimension @relation(fields: [dimensionId], references: [id])
+  firmSizeBand     FirmSizeBand?       // null = all sizes
+  practiceTypeSlug String?             // null = all types
+  yesScore         Float               @default(10.0)
+  notSureScore     Float               @default(5.0)
+  noScore          Float               @default(0.0)
+  weightMultiplier Float               @default(1.0)
+  isActive         Boolean             @default(true)
+  createdAt        DateTime            @default(now())
+  updatedAt        DateTime            @updatedAt
+
+  @@index([dimensionId])
+}
+
+model ScoreBand {
+  id          String         @id @default(cuid())
+  label       ScoreBandLabel @unique
+  minScore    Float
+  maxScore    Float
+  displayName String
+  description String         @db.Text
+  colour      String         @default("#000000")
+  vertical    Vertical       @default(LAW)
+  createdAt   DateTime       @default(now())
+  updatedAt   DateTime       @updatedAt
+}
+
+// ─────────────────────────────────────────────────────────────────────────────
+// GENERATED REPORTS
+// ─────────────────────────────────────────────────────────────────────────────
+
+model GeneratedReport {
+  id           String     @id @default(cuid())
+  submissionId String     @unique
+  submission   Submission @relation(fields: [submissionId], references: [id], onDelete: Cascade)
+
+  // AI-generated text slots (structured JSON per section)
+  coverJson          Json?
+  scoreNarrativeJson Json?
+  regulatoryMapJson  Json?
+  shadowAiJson       Json?
+  opportunitiesJson  Json?
+  exposuresJson      Json?
+  upsellJson         Json?
+
+  rawClaudeResponse String?  @db.Text
+  validationPassed  Boolean  @default(false)
+  validationErrors  String[]
+  generationTimeMs  Int?
+  modelUsed         String?
+  inputTokens       Int?
+  outputTokens      Int?
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  @@index([submissionId])
+}
+
+// ─────────────────────────────────────────────────────────────────────────────
+// PROMPTS & EMAIL TEMPLATES — editable in admin, no redeploy needed
+// ─────────────────────────────────────────────────────────────────────────────
+
+model PromptTemplate {
+  id          String   @id @default(cuid())
+  slug        String   @unique
+  name        String
+  body        String   @db.Text
+  description String?
+  version     Int      @default(1)
+  isActive    Boolean  @default(true)
+  vertical    Vertical @default(LAW)
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+  updatedBy   String?
+}
+
+model EmailTemplate {
+  id          String           @id @default(cuid())
+  slug        String           @unique
+  name        String
+  sequenceDay EmailSequenceDay
+  subject     String
+  htmlBody    String           @db.Text
+  textBody    String           @db.Text
+  version     Int              @default(1)
+  isActive    Boolean          @default(true)
+  vertical    Vertical         @default(LAW)
+  createdAt   DateTime         @default(now())
+  updatedAt   DateTime         @updatedAt
+  updatedBy   String?
+}
+
+model EmailLog {
+  id                String           @id @default(cuid())
+  leadId            String
+  lead              Lead             @relation(fields: [leadId], references: [id], onDelete: Restrict)
+  submissionId      String?
+  submission        Submission?      @relation(fields: [submissionId], references: [id], onDelete: SetNull)
+  sequenceDay       EmailSequenceDay
+  templateSlug      String
+  toAddress         String
+  subject           String
+  status            EmailStatus      @default(PENDING)
+  providerMessageId String?
+  errorMessage      String?
+  scheduledFor      DateTime?
+  sentAt            DateTime?
+  createdAt         DateTime         @default(now())
+  updatedAt         DateTime         @updatedAt
+
+  @@index([leadId])
+  @@index([submissionId])
+  @@index([status])
+  @@index([scheduledFor])
+}
+
+// ─────────────────────────────────────────────────────────────────────────────
+// ADMIN
+// ─────────────────────────────────────────────────────────────────────────────
+
+model AdminUser {
+  id          String   @id @default(cuid())
+  clerkUserId String   @unique
+  email       String   @unique
+  role        String   @default("editor")
+  isActive    Boolean  @default(true)
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+}
