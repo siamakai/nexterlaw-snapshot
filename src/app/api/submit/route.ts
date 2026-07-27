@@ -101,9 +101,23 @@ export async function POST(request: Request) {
     },
   });
 
-  after(async () => {
-    await runGenerationPipeline(submission.id);
-  });
+  // Trigger background generation.
+  // On Netlify: URL env var is set automatically → calls the 15-min background function.
+  // In local dev (no URL set): falls back to in-process execution via after().
+  const netlifyUrl = process.env.URL;
+  if (netlifyUrl) {
+    // Fire-and-forget: Netlify immediately returns 202 before the function runs.
+    fetch(`${netlifyUrl}/.netlify/functions/generate-report-background`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ submissionId: submission.id }),
+    }).catch(err => console.error('[submit] Failed to trigger background fn:', err));
+  } else {
+    // Local dev fallback
+    after(async () => {
+      await runGenerationPipeline(submission.id);
+    });
+  }
 
   return Response.json({ submissionId: submission.id, status: 'PENDING' }, { status: 202 });
 }
