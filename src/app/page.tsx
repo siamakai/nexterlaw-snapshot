@@ -247,20 +247,26 @@ export default function Home() {
       // Poll for completion
       let progress = 20;
       const poll = async () => {
-        const r = await fetch(`/api/report/${data.submissionId}`);
-        const status: ReportStatusResponse = await r.json();
+        try {
+          const r = await fetch(`/api/report/${data.submissionId}`);
+          const status: ReportStatusResponse = await r.json();
 
-        progress = Math.min(progress + 15, 90);
-        setPollProgress(progress);
+          progress = Math.min(progress + 15, 90);
+          setPollProgress(progress);
 
-        if (status.status === 'COMPLETE') {
-          setPollProgress(100);
-          setReportData(status);
-          setStep('result');
-        } else if (status.status === 'FAILED') {
-          throw new Error(status.error ?? 'Report generation failed.');
-        } else {
-          setTimeout(poll, 3000);
+          if (status.status === 'COMPLETE') {
+            setPollProgress(100);
+            setReportData(status);
+            setStep('result');
+          } else if (status.status === 'FAILED') {
+            setSubmitError(status.error ?? 'Report generation failed. Please try again.');
+            setStep('consent');
+          } else {
+            setTimeout(poll, 3000);
+          }
+        } catch {
+          setSubmitError('Network error while checking report status. Please try again.');
+          setStep('consent');
         }
       };
       setTimeout(poll, 2000);
