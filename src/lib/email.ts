@@ -1,7 +1,5 @@
 import { Resend } from 'resend';
-import type { ClearTrustScores, GeneratedReportContent } from '@/types';
-
-const resend = new Resend(process.env.RESEND_API_KEY);
+import type { ClearTrustScores } from '@/types';
 
 const FROM_ADDRESS = 'NexterLaw <no-reply@nexterlaw.com>';
 const BASE_URL = process.env.NEXT_PUBLIC_APP_URL ?? 'https://snapshot.nexterlaw.com';
@@ -151,6 +149,7 @@ export interface SendDay0Options {
 }
 
 export async function sendDay0Email(opts: SendDay0Options) {
+  const resend = new Resend(process.env.RESEND_API_KEY);
   const contactName = opts.firmName;
   const { data, error } = await resend.emails.send({
     from: FROM_ADDRESS,
@@ -178,6 +177,7 @@ export interface SendDay3Options {
 }
 
 export async function sendDay3Email(opts: SendDay3Options) {
+  const resend = new Resend(process.env.RESEND_API_KEY);
   const { data, error } = await resend.emails.send({
     from: FROM_ADDRESS,
     to: opts.to,
@@ -195,6 +195,7 @@ export interface SendDay7Options {
 }
 
 export async function sendDay7Email(opts: SendDay7Options) {
+  const resend = new Resend(process.env.RESEND_API_KEY);
   const { data, error } = await resend.emails.send({
     from: FROM_ADDRESS,
     to: opts.to,
