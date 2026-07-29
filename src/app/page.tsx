@@ -910,35 +910,6 @@ export default function Home() {
             </section>
           )}
 
-          {/* Upsell */}
-          <section className="rounded-2xl p-8 text-white" style={{ backgroundColor: '#1a3a6b' }}>
-            <p className="text-xs font-semibold uppercase tracking-widest mb-2" style={{ color: '#B8902A' }}>
-              What We Deliberately Left Out
-            </p>
-            <h2
-              className="text-2xl font-bold mb-3"
-              style={{ fontFamily: 'var(--font-playfair)' }}
-            >
-              Ready for the full picture?
-            </h2>
-            {report?.upsell && <p className="text-blue-100 text-sm mb-6 leading-relaxed">{report.upsell}</p>}
-            <div className="grid sm:grid-cols-2 gap-3 text-sm text-blue-100 mb-8">
-              {['Staff-level shadow-use inventory', 'Written AI policy', 'Remediation plan', 'Vendor comparison with compliance status', 'Partner briefing pack'].map(item => (
-                <div key={item} className="flex items-center gap-2">
-                  <span style={{ color: '#B8902A' }}>→</span> {item}
-                </div>
-              ))}
-            </div>
-            <a
-              href="https://calendly.com/i-review-info/chat"
-              target="_blank"
-              rel="noreferrer"
-              className={buttonVariants({ size: 'lg' })}
-              style={{ backgroundColor: '#B8902A', color: '#fff', fontWeight: 600 }}
-            >
-              Book Your Full Audit →
-            </a>
-          </section>
 
           <p className="text-center text-xs text-gray-400 pb-6">
             CLEAR TRUST is a proprietary framework by Dr. Siamak Goudarzi / NexterLaw. This Snapshot is general information, not legal or regulatory advice. © NexterLaw
