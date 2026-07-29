@@ -930,7 +930,7 @@ export default function Home() {
               ))}
             </div>
             <a
-              href="https://calendly.com/nexterlaw/audit"
+              href="https://calendly.com/i-review-info/chat"
               target="_blank"
               rel="noreferrer"
               className={buttonVariants({ size: 'lg' })}
