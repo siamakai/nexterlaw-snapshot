@@ -135,7 +135,7 @@ function NLLogo({ size = 'md', dark = false }: { size?: 'sm' | 'md' | 'lg'; dark
   );
 }
 
-function StepIndicator({ current, total }: { current: number; total: number }) {
+function StepIndicator({ current, total, dark }: { current: number; total: number; dark?: boolean }) {
   return (
     <div className="flex items-center gap-1.5">
       {Array.from({ length: total }, (_, i) => (
@@ -145,7 +145,9 @@ function StepIndicator({ current, total }: { current: number; total: number }) {
           style={{
             width: i + 1 === current ? 24 : 8,
             height: 8,
-            backgroundColor: i + 1 <= current ? NAVY : CARD_BORDER,
+            backgroundColor: i + 1 <= current
+              ? (dark ? GOLD : NAVY)
+              : (dark ? 'rgba(184,144,42,0.25)' : CARD_BORDER),
           }}
         />
       ))}
@@ -772,24 +774,36 @@ export default function Home() {
 
   if (step === 'selfAssessment') {
     return (
-      <div className="min-h-screen flex flex-col" style={{ backgroundColor: PAGE_BG }}>
-        <header className="px-6 py-4 bg-white flex justify-between items-center max-w-6xl mx-auto w-full">
-          <NLLogo />
-          <StepIndicator current={2} total={3} />
-        </header>
-        <div className="w-full h-px" style={{ backgroundColor: CARD_BORDER }} />
-        <div className="h-0.5 w-full" style={{ background: `linear-gradient(90deg, ${NAVY} 0%, ${GOLD} 66%, ${NAVY} 100%)` }} />
+      <div style={{ minHeight: '100vh', display: 'flex', flexDirection: 'column', backgroundColor: R_BG }}>
+        {/* Subtle ambient background image */}
+        <div style={{ position: 'fixed', inset: 0, zIndex: 0, overflow: 'hidden', pointerEvents: 'none' }}>
+          <img
+            src="/hero.webp"
+            alt="" aria-hidden="true"
+            style={{ width: '100%', height: '100%', objectFit: 'cover', objectPosition: 'center 30%', opacity: 0.07 }}
+          />
+        </div>
 
-        <main className="flex-1 px-6 py-10 max-w-2xl mx-auto w-full">
+        <header
+          className="px-6 py-4 flex justify-between items-center max-w-6xl mx-auto w-full"
+          style={{ position: 'relative', zIndex: 10 }}
+        >
+          <NLLogo dark />
+          <StepIndicator current={2} total={3} dark />
+        </header>
+        <div style={{ position: 'relative', zIndex: 10, height: 1, backgroundColor: 'rgba(184,144,42,0.15)' }} />
+        <div style={{ position: 'relative', zIndex: 10, height: 2, background: `linear-gradient(90deg, ${NAVY} 0%, ${GOLD} 50%, ${NAVY} 100%)` }} />
+
+        <main className="flex-1 px-6 py-10 max-w-2xl mx-auto w-full" style={{ position: 'relative', zIndex: 10 }}>
           <p className="text-xs font-semibold uppercase tracking-widest mb-2" style={{ color: GOLD }}>Step 02 of 03</p>
-          <h2 className="mb-1" style={{ fontFamily: 'var(--font-playfair)', color: NAVY, fontWeight: 700, fontSize: '1.75rem', lineHeight: 1.25 }}>
+          <h2 className="mb-1" style={{ fontFamily: 'var(--font-playfair)', color: R_CREAM, fontWeight: 700, fontSize: '1.75rem', lineHeight: 1.25 }}>
             Ten quick questions
           </h2>
-          <p className="mb-6" style={{ color: MUTED }}>These answers drive your personalised CLEAR TRUST score.</p>
+          <p className="mb-6" style={{ color: R_BODY }}>These answers drive your personalised CLEAR TRUST score.</p>
 
           <div
             className="flex items-start gap-3 px-4 py-3 mb-8 text-sm"
-            style={{ backgroundColor: `${NAVY}0a`, border: `1px solid ${NAVY}20`, borderRadius: 2, color: NAVY }}
+            style={{ backgroundColor: 'rgba(184,144,42,0.08)', border: `1px solid ${R_BORDER}`, borderRadius: 2, color: R_CREAM }}
           >
             <span className="shrink-0 mt-0.5" style={{ color: GOLD }}>◆</span>
             <p>
@@ -806,15 +820,20 @@ export default function Home() {
               return (
                 <div
                   key={dim.key}
-                  className="bg-white p-5"
-                  style={{ border: `1px solid ${CARD_BORDER}`, borderLeft: `3px solid ${leftBorder}`, borderRadius: 2 }}
+                  className="p-5"
+                  style={{
+                    backgroundColor: R_CARD,
+                    border: `1px solid ${R_BORDER}`,
+                    borderLeft: `3px solid ${leftBorder}`,
+                    borderRadius: 2,
+                  }}
                 >
                   <div className="flex items-start gap-3 mb-4">
                     <div
                       className="flex items-center justify-center shrink-0 mt-0.5"
-                      style={{ width: 28, height: 28, backgroundColor: NAVY, borderRadius: 2 }}
+                      style={{ width: 28, height: 28, backgroundColor: GOLD, borderRadius: 2 }}
                     >
-                      <span style={{ color: '#fff', fontFamily: 'var(--font-playfair)', fontWeight: 700, fontSize: 14, lineHeight: 1 }}>
+                      <span style={{ color: R_BG, fontFamily: 'var(--font-playfair)', fontWeight: 700, fontSize: 14, lineHeight: 1 }}>
                         {dim.letter}
                       </span>
                     </div>
@@ -822,7 +841,7 @@ export default function Home() {
                       <p className="text-xs font-semibold uppercase tracking-wide" style={{ color: GOLD }}>
                         {dim.name} · Q{i + 1}
                       </p>
-                      <p className="text-sm mt-0.5" style={{ color: BODY }}>{dim.question}</p>
+                      <p className="text-sm mt-0.5" style={{ color: R_CREAM }}>{dim.question}</p>
                     </div>
                   </div>
                   <div className="flex gap-2 pl-10">
@@ -841,10 +860,10 @@ export default function Home() {
                           onClick={() => setAnswers(p => ({ ...p, [dim.key]: opt.value as SelfAssessmentAnswer }))}
                           className="flex-1 py-2 text-sm font-medium transition-colors"
                           style={{
-                            border: `1px solid ${sel ? selStyle.borderColor : CARD_BORDER}`,
+                            border: `1px solid ${sel ? selStyle.borderColor : R_BORDER}`,
                             borderRadius: 2,
-                            backgroundColor: sel ? selStyle.bg : '#fff',
-                            color: sel ? selStyle.color : MUTED,
+                            backgroundColor: sel ? selStyle.bg : 'rgba(13,31,60,0.6)',
+                            color: sel ? selStyle.color : R_BODY,
                           }}
                         >
                           {opt.label}
@@ -861,24 +880,25 @@ export default function Home() {
             <button
               onClick={() => setStep('intake')}
               className="flex-1 px-6 py-3 text-sm font-medium"
-              style={{ border: `1px solid ${CARD_BORDER}`, borderRadius: 2, backgroundColor: '#fff', color: BODY }}
+              style={{ border: `1px solid ${R_BORDER}`, borderRadius: 2, backgroundColor: 'transparent', color: R_CREAM }}
             >
               ← Back
             </button>
             <button
               onClick={() => { if (allAnswered) setStep('consent'); }}
-              className="flex-1 px-6 py-3 text-sm font-semibold text-white"
+              className="flex-1 px-6 py-3 text-sm font-semibold"
               style={{
-                backgroundColor: allAnswered ? NAVY : `${NAVY}60`,
+                backgroundColor: allAnswered ? GOLD : 'rgba(184,144,42,0.35)',
                 borderRadius: 2,
                 cursor: allAnswered ? 'pointer' : 'not-allowed',
+                color: allAnswered ? R_BG : 'rgba(237,232,224,0.45)',
               }}
             >
               Continue →
             </button>
           </div>
           {!allAnswered && (
-            <p className="text-center text-sm mt-3" style={{ color: MUTED }}>Please answer all questions to continue.</p>
+            <p className="text-center text-sm mt-3" style={{ color: R_MUTED }}>Please answer all questions to continue.</p>
           )}
         </main>
       </div>
