@@ -57,7 +57,6 @@ const EMPTY_ANSWERS: SelfAssessmentAnswers = {
 const NAVY = '#1a3a6b';
 const GOLD = '#B8902A';
 const STEEL = '#5b7fa6';
-const PAGE_BG = '#f9f7f4';
 const CARD_BORDER = '#e6dfd6';
 const BODY = '#3d3a35';
 const MUTED = '#7a746d';
@@ -566,25 +565,29 @@ export default function Home() {
 
   if (step === 'intake') {
     return (
-      <div className="min-h-screen flex flex-col" style={{ backgroundColor: PAGE_BG }}>
-        <header className="px-6 py-4 bg-white flex justify-between items-center max-w-6xl mx-auto w-full">
-          <NLLogo />
-          <StepIndicator current={1} total={3} />
-        </header>
-        <div className="w-full h-px" style={{ backgroundColor: CARD_BORDER }} />
-        <div className="h-0.5 w-full" style={{ background: `linear-gradient(90deg, ${NAVY} 0%, ${GOLD} 33%, ${NAVY} 100%)` }} />
+      <div style={{ minHeight: '100vh', display: 'flex', flexDirection: 'column', backgroundColor: R_BG }}>
+        <div style={{ position: 'fixed', inset: 0, zIndex: 0, overflow: 'hidden', pointerEvents: 'none' }}>
+          <img src="/hero.webp" alt="" aria-hidden="true" style={{ width: '100%', height: '100%', objectFit: 'cover', objectPosition: 'center 30%', opacity: 0.07 }} />
+        </div>
 
-        <main className="flex-1 px-6 py-10 max-w-2xl mx-auto w-full">
+        <header className="px-6 py-4 flex justify-between items-center max-w-6xl mx-auto w-full" style={{ position: 'relative', zIndex: 10 }}>
+          <NLLogo dark />
+          <StepIndicator current={1} total={3} dark />
+        </header>
+        <div style={{ position: 'relative', zIndex: 10, height: 1, backgroundColor: 'rgba(184,144,42,0.15)' }} />
+        <div style={{ position: 'relative', zIndex: 10, height: 2, background: `linear-gradient(90deg, ${NAVY} 0%, ${GOLD} 33%, ${NAVY} 100%)` }} />
+
+        <main className="flex-1 px-6 py-10 max-w-2xl mx-auto w-full" style={{ position: 'relative', zIndex: 10 }}>
           <p className="text-xs font-semibold uppercase tracking-widest mb-2" style={{ color: GOLD }}>Step 01 of 03</p>
-          <h2 className="mb-1" style={{ fontFamily: 'var(--font-playfair)', color: NAVY, fontWeight: 700, fontSize: '1.75rem', lineHeight: 1.25 }}>
+          <h2 className="mb-1" style={{ fontFamily: 'var(--font-playfair)', color: R_CREAM, fontWeight: 700, fontSize: '1.75rem', lineHeight: 1.25 }}>
             Tell us about your firm
           </h2>
-          <p className="mb-8" style={{ color: MUTED }}>This information personalises your AI Readiness Snapshot.</p>
+          <p className="mb-8" style={{ color: R_BODY }}>This information personalises your AI Readiness Snapshot.</p>
 
-          <div className="bg-white p-8 space-y-6" style={{ border: `1px solid ${CARD_BORDER}`, borderRadius: 2 }}>
+          <div className="p-8 space-y-6" style={{ backgroundColor: R_CARD, border: `1px solid ${R_BORDER}`, borderRadius: 2 }}>
 
             <div>
-              <Label htmlFor="firmName" className="text-sm font-semibold mb-1.5 block" style={{ color: BODY }}>
+              <Label htmlFor="firmName" className="text-sm font-semibold mb-1.5 block" style={{ color: R_CREAM }}>
                 Firm name <span style={{ color: GOLD }}>*</span>
               </Label>
               <Input
@@ -592,13 +595,13 @@ export default function Home() {
                 value={intake.firmName}
                 onChange={e => setIntake(p => ({ ...p, firmName: e.target.value }))}
                 placeholder="e.g. Smith & Partners LLP"
-                style={{ borderColor: intakeErrors.firmName ? '#dc2626' : CARD_BORDER, borderRadius: 2 }}
+                style={{ borderColor: intakeErrors.firmName ? '#f87171' : R_BORDER, borderRadius: 2, backgroundColor: 'rgba(13,31,60,0.6)', color: R_CREAM }}
               />
-              {intakeErrors.firmName && <p className="text-sm mt-1" style={{ color: '#dc2626' }}>{intakeErrors.firmName}</p>}
+              {intakeErrors.firmName && <p className="text-sm mt-1" style={{ color: '#f87171' }}>{intakeErrors.firmName}</p>}
             </div>
 
             <div>
-              <Label htmlFor="firmWebsite" className="text-sm font-semibold mb-1.5 block" style={{ color: BODY }}>
+              <Label htmlFor="firmWebsite" className="text-sm font-semibold mb-1.5 block" style={{ color: R_CREAM }}>
                 Firm website <span style={{ color: GOLD }}>*</span>
               </Label>
               <Input
@@ -606,14 +609,14 @@ export default function Home() {
                 value={intake.firmWebsite}
                 onChange={e => setIntake(p => ({ ...p, firmWebsite: e.target.value }))}
                 placeholder="https://www.yourfirm.co.uk"
-                style={{ borderColor: intakeErrors.firmWebsite ? '#dc2626' : CARD_BORDER, borderRadius: 2 }}
+                style={{ borderColor: intakeErrors.firmWebsite ? '#f87171' : R_BORDER, borderRadius: 2, backgroundColor: 'rgba(13,31,60,0.6)', color: R_CREAM }}
               />
-              {intakeErrors.firmWebsite && <p className="text-sm mt-1" style={{ color: '#dc2626' }}>{intakeErrors.firmWebsite}</p>}
+              {intakeErrors.firmWebsite && <p className="text-sm mt-1" style={{ color: '#f87171' }}>{intakeErrors.firmWebsite}</p>}
             </div>
 
             <div className="grid grid-cols-2 gap-4">
               <div>
-                <Label htmlFor="city" className="text-sm font-semibold mb-1.5 block" style={{ color: BODY }}>
+                <Label htmlFor="city" className="text-sm font-semibold mb-1.5 block" style={{ color: R_CREAM }}>
                   City <span style={{ color: GOLD }}>*</span>
                 </Label>
                 <Input
@@ -621,12 +624,12 @@ export default function Home() {
                   value={intake.city}
                   onChange={e => setIntake(p => ({ ...p, city: e.target.value }))}
                   placeholder="London"
-                  style={{ borderColor: intakeErrors.city ? '#dc2626' : CARD_BORDER, borderRadius: 2 }}
+                  style={{ borderColor: intakeErrors.city ? '#f87171' : R_BORDER, borderRadius: 2, backgroundColor: 'rgba(13,31,60,0.6)', color: R_CREAM }}
                 />
-                {intakeErrors.city && <p className="text-sm mt-1" style={{ color: '#dc2626' }}>{intakeErrors.city}</p>}
+                {intakeErrors.city && <p className="text-sm mt-1" style={{ color: '#f87171' }}>{intakeErrors.city}</p>}
               </div>
               <div>
-                <Label htmlFor="country" className="text-sm font-semibold mb-1.5 block" style={{ color: BODY }}>
+                <Label htmlFor="country" className="text-sm font-semibold mb-1.5 block" style={{ color: R_CREAM }}>
                   Country <span style={{ color: GOLD }}>*</span>
                 </Label>
                 <Input
@@ -634,18 +637,18 @@ export default function Home() {
                   value={intake.country}
                   onChange={e => setIntake(p => ({ ...p, country: e.target.value }))}
                   placeholder="e.g. United Kingdom"
-                  style={{ borderColor: intakeErrors.country ? '#dc2626' : CARD_BORDER, borderRadius: 2 }}
+                  style={{ borderColor: intakeErrors.country ? '#f87171' : R_BORDER, borderRadius: 2, backgroundColor: 'rgba(13,31,60,0.6)', color: R_CREAM }}
                 />
-                {intakeErrors.country && <p className="text-sm mt-1" style={{ color: '#dc2626' }}>{intakeErrors.country}</p>}
+                {intakeErrors.country && <p className="text-sm mt-1" style={{ color: '#f87171' }}>{intakeErrors.country}</p>}
               </div>
             </div>
 
-            <div className="h-px" style={{ backgroundColor: CARD_BORDER }} />
+            <div className="h-px" style={{ backgroundColor: R_BORDER }} />
 
             <div>
-              <Label className="text-sm font-semibold block mb-0.5" style={{ color: BODY }}>
+              <Label className="text-sm font-semibold block mb-0.5" style={{ color: R_CREAM }}>
                 Practice type(s) <span style={{ color: GOLD }}>*</span>{' '}
-                <span className="font-normal text-xs" style={{ color: MUTED }}>(select all that apply)</span>
+                <span className="font-normal text-xs" style={{ color: R_MUTED }}>(select all that apply)</span>
               </Label>
               <div className="mt-3 grid grid-cols-1 sm:grid-cols-2 gap-2">
                 {PRACTICE_TYPES.map(pt => {
@@ -655,9 +658,9 @@ export default function Home() {
                       key={pt.slug}
                       className="flex items-center gap-3 px-3 py-2.5 cursor-pointer transition-colors"
                       style={{
-                        border: `1px solid ${checked ? NAVY : CARD_BORDER}`,
+                        border: `1px solid ${checked ? GOLD : R_BORDER}`,
                         borderRadius: 2,
-                        backgroundColor: checked ? `${NAVY}0a` : '#fff',
+                        backgroundColor: checked ? 'rgba(184,144,42,0.10)' : 'rgba(13,31,60,0.4)',
                       }}
                     >
                       <Checkbox
@@ -672,16 +675,16 @@ export default function Home() {
                         }}
                         className="shrink-0"
                       />
-                      <span className="text-sm" style={{ color: checked ? NAVY : BODY }}>{pt.label}</span>
+                      <span className="text-sm" style={{ color: checked ? GOLD : R_BODY }}>{pt.label}</span>
                     </label>
                   );
                 })}
               </div>
-              {intakeErrors.practiceTypes && <p className="text-sm mt-1" style={{ color: '#dc2626' }}>{intakeErrors.practiceTypes}</p>}
+              {intakeErrors.practiceTypes && <p className="text-sm mt-1" style={{ color: '#f87171' }}>{intakeErrors.practiceTypes}</p>}
             </div>
 
             <div>
-              <Label className="text-sm font-semibold block mb-0.5" style={{ color: BODY }}>
+              <Label className="text-sm font-semibold block mb-0.5" style={{ color: R_CREAM }}>
                 Firm size <span style={{ color: GOLD }}>*</span>
               </Label>
               <div className="mt-3 grid grid-cols-2 sm:grid-cols-3 gap-2">
@@ -692,21 +695,21 @@ export default function Home() {
                     onClick={() => setIntake(p => ({ ...p, firmSize: opt.value }))}
                     className="px-3 py-2.5 text-sm font-medium transition-colors"
                     style={{
-                      border: `1px solid ${intake.firmSize === opt.value ? NAVY : CARD_BORDER}`,
+                      border: `1px solid ${intake.firmSize === opt.value ? GOLD : R_BORDER}`,
                       borderRadius: 2,
-                      backgroundColor: intake.firmSize === opt.value ? NAVY : '#fff',
-                      color: intake.firmSize === opt.value ? '#fff' : BODY,
+                      backgroundColor: intake.firmSize === opt.value ? GOLD : 'rgba(13,31,60,0.4)',
+                      color: intake.firmSize === opt.value ? R_BG : R_BODY,
                     }}
                   >
                     {opt.label}
                   </button>
                 ))}
               </div>
-              {intakeErrors.firmSize && <p className="text-sm mt-1" style={{ color: '#dc2626' }}>{intakeErrors.firmSize}</p>}
+              {intakeErrors.firmSize && <p className="text-sm mt-1" style={{ color: '#f87171' }}>{intakeErrors.firmSize}</p>}
             </div>
 
             <div>
-              <Label className="text-sm font-semibold block mb-0.5" style={{ color: BODY }}>
+              <Label className="text-sm font-semibold block mb-0.5" style={{ color: R_CREAM }}>
                 Do you act for EU-based clients or handle EU-market work? <span style={{ color: GOLD }}>*</span>
               </Label>
               <div className="mt-3 flex gap-2">
@@ -717,23 +720,23 @@ export default function Home() {
                     onClick={() => setIntake(p => ({ ...p, euFacing: opt.value }))}
                     className="flex-1 px-3 py-2.5 text-sm font-medium transition-colors"
                     style={{
-                      border: `1px solid ${intake.euFacing === opt.value ? NAVY : CARD_BORDER}`,
+                      border: `1px solid ${intake.euFacing === opt.value ? GOLD : R_BORDER}`,
                       borderRadius: 2,
-                      backgroundColor: intake.euFacing === opt.value ? NAVY : '#fff',
-                      color: intake.euFacing === opt.value ? '#fff' : BODY,
+                      backgroundColor: intake.euFacing === opt.value ? GOLD : 'rgba(13,31,60,0.4)',
+                      color: intake.euFacing === opt.value ? R_BG : R_BODY,
                     }}
                   >
                     {opt.label}
                   </button>
                 ))}
               </div>
-              {intakeErrors.euFacing && <p className="text-sm mt-1" style={{ color: '#dc2626' }}>{intakeErrors.euFacing}</p>}
+              {intakeErrors.euFacing && <p className="text-sm mt-1" style={{ color: '#f87171' }}>{intakeErrors.euFacing}</p>}
             </div>
 
-            <div className="h-px" style={{ backgroundColor: CARD_BORDER }} />
+            <div className="h-px" style={{ backgroundColor: R_BORDER }} />
 
             <div>
-              <Label htmlFor="workEmail" className="text-sm font-semibold mb-1.5 block" style={{ color: BODY }}>
+              <Label htmlFor="workEmail" className="text-sm font-semibold mb-1.5 block" style={{ color: R_CREAM }}>
                 Work email <span style={{ color: GOLD }}>*</span>
               </Label>
               <Input
@@ -742,10 +745,10 @@ export default function Home() {
                 value={intake.workEmail}
                 onChange={e => setIntake(p => ({ ...p, workEmail: e.target.value }))}
                 placeholder="you@yourfirm.co.uk"
-                style={{ borderColor: intakeErrors.workEmail ? '#dc2626' : CARD_BORDER, borderRadius: 2 }}
+                style={{ borderColor: intakeErrors.workEmail ? '#f87171' : R_BORDER, borderRadius: 2, backgroundColor: 'rgba(13,31,60,0.6)', color: R_CREAM }}
               />
               <EmailWarning email={intake.workEmail} />
-              {intakeErrors.workEmail && <p className="text-sm mt-1" style={{ color: '#dc2626' }}>{intakeErrors.workEmail}</p>}
+              {intakeErrors.workEmail && <p className="text-sm mt-1" style={{ color: '#f87171' }}>{intakeErrors.workEmail}</p>}
             </div>
           </div>
 
@@ -753,14 +756,14 @@ export default function Home() {
             <button
               onClick={() => setStep('landing')}
               className="flex-1 px-6 py-3 text-sm font-medium"
-              style={{ border: `1px solid ${CARD_BORDER}`, borderRadius: 2, backgroundColor: '#fff', color: BODY }}
+              style={{ border: `1px solid ${R_BORDER}`, borderRadius: 2, backgroundColor: 'transparent', color: R_CREAM }}
             >
               ← Back
             </button>
             <button
               onClick={() => { if (validateIntake()) setStep('selfAssessment'); }}
-              className="flex-1 px-6 py-3 text-sm font-semibold text-white transition-opacity hover:opacity-90"
-              style={{ backgroundColor: NAVY, borderRadius: 2 }}
+              className="flex-1 px-6 py-3 text-sm font-semibold transition-opacity hover:opacity-90"
+              style={{ backgroundColor: GOLD, color: R_BG, borderRadius: 2 }}
             >
               Continue →
             </button>
@@ -909,32 +912,36 @@ export default function Home() {
 
   if (step === 'consent') {
     return (
-      <div className="min-h-screen flex flex-col" style={{ backgroundColor: PAGE_BG }}>
-        <header className="px-6 py-4 bg-white flex justify-between items-center max-w-6xl mx-auto w-full">
-          <NLLogo />
-          <StepIndicator current={3} total={3} />
-        </header>
-        <div className="w-full h-px" style={{ backgroundColor: CARD_BORDER }} />
-        <div className="h-0.5 w-full" style={{ background: `linear-gradient(90deg, ${GOLD} 0%, ${NAVY} 100%)` }} />
+      <div style={{ minHeight: '100vh', display: 'flex', flexDirection: 'column', backgroundColor: R_BG }}>
+        <div style={{ position: 'fixed', inset: 0, zIndex: 0, overflow: 'hidden', pointerEvents: 'none' }}>
+          <img src="/hero.webp" alt="" aria-hidden="true" style={{ width: '100%', height: '100%', objectFit: 'cover', objectPosition: 'center 30%', opacity: 0.07 }} />
+        </div>
 
-        <main className="flex-1 px-6 py-10 max-w-2xl mx-auto w-full flex flex-col justify-center">
+        <header className="px-6 py-4 flex justify-between items-center max-w-6xl mx-auto w-full" style={{ position: 'relative', zIndex: 10 }}>
+          <NLLogo dark />
+          <StepIndicator current={3} total={3} dark />
+        </header>
+        <div style={{ position: 'relative', zIndex: 10, height: 1, backgroundColor: 'rgba(184,144,42,0.15)' }} />
+        <div style={{ position: 'relative', zIndex: 10, height: 2, background: `linear-gradient(90deg, ${GOLD} 0%, ${NAVY} 100%)` }} />
+
+        <main className="flex-1 px-6 py-10 max-w-2xl mx-auto w-full flex flex-col justify-center" style={{ position: 'relative', zIndex: 10 }}>
           <p className="text-xs font-semibold uppercase tracking-widest mb-2" style={{ color: GOLD }}>Step 03 of 03</p>
 
-          <div className="bg-white p-8" style={{ border: `1px solid ${CARD_BORDER}`, borderRadius: 2 }}>
-            <h2 className="mb-2" style={{ fontFamily: 'var(--font-playfair)', color: NAVY, fontWeight: 700, fontSize: '1.75rem', lineHeight: 1.25 }}>
+          <div className="p-8" style={{ backgroundColor: R_CARD, border: `1px solid ${R_BORDER}`, borderRadius: 2 }}>
+            <h2 className="mb-2" style={{ fontFamily: 'var(--font-playfair)', color: R_CREAM, fontWeight: 700, fontSize: '1.75rem', lineHeight: 1.25 }}>
               Almost there
             </h2>
-            <p className="mb-6" style={{ color: MUTED }}>
+            <p className="mb-6" style={{ color: R_BODY }}>
               Your personalised Snapshot is ready to generate. Please read and confirm the following before we proceed.
             </p>
 
             <div
               className="p-5 text-sm leading-relaxed mb-6"
-              style={{ backgroundColor: PAGE_BG, border: `1px solid ${CARD_BORDER}`, borderRadius: 2, color: BODY }}
+              style={{ backgroundColor: 'rgba(184,144,42,0.08)', border: `1px solid ${R_BORDER}`, borderRadius: 2, color: R_BODY }}
             >
-              <p className="font-semibold mb-2" style={{ color: NAVY }}>Important Notice</p>
+              <p className="font-semibold mb-2" style={{ color: GOLD }}>Important Notice</p>
               <p>
-                This AI Readiness Snapshot is provided as <strong>general information only</strong>. It does not constitute legal, regulatory, or professional advice, and no adviser–client relationship is created by using this tool. The Snapshot is not a substitute for professional advice tailored to your firm&apos;s specific circumstances.
+                This AI Readiness Snapshot is provided as <strong style={{ color: R_CREAM }}>general information only</strong>. It does not constitute legal, regulatory, or professional advice, and no adviser–client relationship is created by using this tool. The Snapshot is not a substitute for professional advice tailored to your firm&apos;s specific circumstances.
               </p>
             </div>
 
@@ -945,16 +952,16 @@ export default function Home() {
                 onCheckedChange={v => setConsent(v === true)}
                 className="mt-0.5 shrink-0"
               />
-              <span className="text-sm" style={{ color: BODY }}>
+              <span className="text-sm" style={{ color: R_CREAM }}>
                 I understand this Snapshot is general information, not legal or regulatory advice, and I consent to NexterLaw contacting me about the results.{' '}
-                <a href="#" className="underline" style={{ color: NAVY }}>Privacy notice</a>.
+                <a href="#" className="underline" style={{ color: GOLD }}>Privacy notice</a>.
               </span>
             </label>
 
             {submitError && (
               <div
                 className="mt-4 p-4 text-sm"
-                style={{ backgroundColor: '#fef2f2', border: '1px solid #fecaca', borderRadius: 2, color: '#b91c1c' }}
+                style={{ backgroundColor: 'rgba(248,113,113,0.10)', border: '1px solid rgba(248,113,113,0.30)', borderRadius: 2, color: '#f87171' }}
               >
                 {submitError}
               </div>
@@ -964,18 +971,19 @@ export default function Home() {
               <button
                 onClick={() => setStep('selfAssessment')}
                 className="flex-1 px-6 py-3 text-sm font-medium"
-                style={{ border: `1px solid ${CARD_BORDER}`, borderRadius: 2, backgroundColor: '#fff', color: BODY }}
+                style={{ border: `1px solid ${R_BORDER}`, borderRadius: 2, backgroundColor: 'transparent', color: R_CREAM }}
               >
                 ← Back
               </button>
               <button
                 onClick={handleSubmit}
                 disabled={!consent}
-                className="flex-1 px-6 py-3 text-sm font-semibold text-white"
+                className="flex-1 px-6 py-3 text-sm font-semibold"
                 style={{
-                  backgroundColor: consent ? NAVY : `${NAVY}60`,
+                  backgroundColor: consent ? GOLD : 'rgba(184,144,42,0.35)',
                   borderRadius: 2,
                   cursor: consent ? 'pointer' : 'not-allowed',
+                  color: consent ? R_BG : 'rgba(237,232,224,0.45)',
                 }}
               >
                 Generate My Snapshot →
@@ -1014,19 +1022,29 @@ export default function Home() {
     ];
 
     return (
-      <div className="min-h-screen bg-white flex flex-col">
-        <div className="px-6 py-5 flex justify-center" style={{ borderBottom: `1px solid ${CARD_BORDER}` }}>
-          <NLLogo />
+      <div style={{ minHeight: '100vh', display: 'flex', flexDirection: 'column', backgroundColor: R_BG }}>
+        <style dangerouslySetInnerHTML={{ __html: `
+          @keyframes fadeInUp {
+            from { opacity: 0; transform: translateY(16px); }
+            to   { opacity: 1; transform: translateY(0); }
+          }
+        `}} />
+        <div style={{ position: 'fixed', inset: 0, zIndex: 0, overflow: 'hidden', pointerEvents: 'none' }}>
+          <img src="/hero.webp" alt="" aria-hidden="true" style={{ width: '100%', height: '100%', objectFit: 'cover', objectPosition: 'center 30%', opacity: 0.07 }} />
         </div>
-        <div className="h-0.5 w-full" style={{ background: `linear-gradient(90deg, ${NAVY} 0%, ${GOLD} 50%, ${NAVY} 100%)` }} />
 
-        <div className="flex-1 flex flex-col items-center justify-center px-6 py-12">
+        <div className="px-6 py-5 flex justify-center" style={{ position: 'relative', zIndex: 10, borderBottom: `1px solid ${R_BORDER}` }}>
+          <NLLogo dark />
+        </div>
+        <div style={{ position: 'relative', zIndex: 10, height: 2, background: `linear-gradient(90deg, ${NAVY} 0%, ${GOLD} 50%, ${NAVY} 100%)` }} />
+
+        <div className="flex-1 flex flex-col items-center justify-center px-6 py-12" style={{ position: 'relative', zIndex: 10 }}>
           <div className="w-full max-w-2xl">
 
             <div className="flex items-center gap-4 mb-12">
               <div
                 className="w-10 h-10 flex items-center justify-center shrink-0"
-                style={{ backgroundColor: `${GOLD}18`, borderRadius: 2 }}
+                style={{ backgroundColor: 'rgba(184,144,42,0.15)', borderRadius: 2 }}
               >
                 <div
                   className="w-5 h-5 rounded-full border-2 border-t-transparent animate-spin"
@@ -1034,10 +1052,10 @@ export default function Home() {
                 />
               </div>
               <div>
-                <p className="font-bold text-lg leading-tight" style={{ color: NAVY, fontFamily: 'var(--font-playfair)' }}>
+                <p className="font-bold text-lg leading-tight" style={{ color: R_CREAM, fontFamily: 'var(--font-playfair)' }}>
                   Building your AI Readiness Snapshot
                 </p>
-                <p className="text-sm mt-0.5" style={{ color: MUTED }}>{stage.label}</p>
+                <p className="text-sm mt-0.5" style={{ color: R_BODY }}>{stage.label}</p>
               </div>
             </div>
 
@@ -1060,14 +1078,14 @@ export default function Home() {
                     style={{ gap: 16, opacity: 0, animation: 'fadeInUp 0.45s ease forwards', animationDelay: `${i * 0.22}s` }}
                   >
                     <div
-                      style={{ width: 70, height: 70, backgroundColor: NAVY, borderRadius: 6, display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0 }}
+                      style={{ width: 70, height: 70, backgroundColor: GOLD, borderRadius: 6, display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0 }}
                     >
-                      <span style={{ color: GOLD, fontFamily: 'var(--font-playfair)', fontWeight: 700, fontSize: 38, lineHeight: 1 }}>
+                      <span style={{ color: R_BG, fontFamily: 'var(--font-playfair)', fontWeight: 700, fontSize: 38, lineHeight: 1 }}>
                         {dim.letter}
                       </span>
                     </div>
                     <span style={{ color: GOLD, fontSize: 20, lineHeight: 1, flexShrink: 0 }}>—</span>
-                    <span style={{ color: NAVY, fontSize: 17, fontWeight: 400 }}>{dim.word}</span>
+                    <span style={{ color: R_CREAM, fontSize: 17, fontWeight: 400 }}>{dim.word}</span>
                   </div>
                 ))}
               </div>
@@ -1080,27 +1098,27 @@ export default function Home() {
                     style={{ gap: 16, opacity: 0, animation: 'fadeInUp 0.45s ease forwards', animationDelay: `${(i + 5) * 0.22}s` }}
                   >
                     <div
-                      style={{ width: 70, height: 70, backgroundColor: NAVY, borderRadius: 6, display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0 }}
+                      style={{ width: 70, height: 70, backgroundColor: GOLD, borderRadius: 6, display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0 }}
                     >
-                      <span style={{ color: GOLD, fontFamily: 'var(--font-playfair)', fontWeight: 700, fontSize: 38, lineHeight: 1 }}>
+                      <span style={{ color: R_BG, fontFamily: 'var(--font-playfair)', fontWeight: 700, fontSize: 38, lineHeight: 1 }}>
                         {dim.letter}
                       </span>
                     </div>
                     <span style={{ color: GOLD, fontSize: 20, lineHeight: 1, flexShrink: 0 }}>—</span>
-                    <span style={{ color: NAVY, fontSize: 17, fontWeight: 400 }}>{dim.word}</span>
+                    <span style={{ color: R_CREAM, fontSize: 17, fontWeight: 400 }}>{dim.word}</span>
                   </div>
                 ))}
               </div>
             </div>
 
-            <p className="text-xs text-center mb-6 leading-relaxed" style={{ color: MUTED }}>
+            <p className="text-xs text-center mb-6 leading-relaxed" style={{ color: R_MUTED }}>
               Your report is being generated using the{' '}
-              <span className="font-semibold" style={{ color: NAVY }}>CLEAR TRUST Framework</span>{' '}
+              <span className="font-semibold" style={{ color: R_CREAM }}>CLEAR TRUST Framework</span>{' '}
               — NexterLaw&apos;s proprietary methodology for assessing AI governance maturity. Your responses are evaluated against the framework&apos;s ten dimensions and criteria to produce your personalised findings.
             </p>
 
             <Progress value={pollProgress} className="h-0.5" />
-            <p className="text-xs mt-2 text-center" style={{ color: MUTED }}>This takes around 30–60 seconds</p>
+            <p className="text-xs mt-2 text-center" style={{ color: R_MUTED }}>This takes around 30–60 seconds</p>
           </div>
         </div>
       </div>
