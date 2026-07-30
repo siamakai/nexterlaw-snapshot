@@ -62,9 +62,17 @@ const CARD_BORDER = '#e6dfd6';
 const BODY = '#3d3a35';
 const MUTED = '#7a746d';
 
+// Result-page dark theme tokens
+const R_BG = '#0d1f3c';
+const R_CARD = '#132644';
+const R_BORDER = 'rgba(184,144,42,0.20)';
+const R_CREAM = '#ede8e0';
+const R_BODY = '#9fb0c8';
+const R_MUTED = '#5b7290';
+
 // ─── Helper components ────────────────────────────────────────────────────────
 
-function NLLogo({ size = 'md' }: { size?: 'sm' | 'md' | 'lg' }) {
+function NLLogo({ size = 'md', dark = false }: { size?: 'sm' | 'md' | 'lg'; dark?: boolean }) {
   const scale = size === 'sm' ? 0.75 : size === 'lg' ? 1.4 : 1;
   const boxSize = Math.round(52 * scale);
   const titleSize = Math.round(28 * scale);
@@ -78,7 +86,7 @@ function NLLogo({ size = 'md' }: { size?: 'sm' | 'md' | 'lg' }) {
         style={{
           width: boxSize,
           height: boxSize,
-          backgroundColor: NAVY,
+          backgroundColor: dark ? R_CARD : NAVY,
           border: `2px solid ${GOLD}`,
           outline: `1px solid ${GOLD}`,
           outlineOffset: '-4px',
@@ -107,12 +115,12 @@ function NLLogo({ size = 'md' }: { size?: 'sm' | 'md' | 'lg' }) {
             letterSpacing: '-0.01em',
           }}
         >
-          <span style={{ color: NAVY }}>NEXTER</span>
+          <span style={{ color: dark ? R_CREAM : NAVY }}>NEXTER</span>
           <span style={{ color: GOLD }}>LAW</span>
         </div>
         <div
           style={{
-            color: STEEL,
+            color: dark ? '#6b87a8' : STEEL,
             fontSize: subtitleSize,
             letterSpacing: '0.2em',
             textTransform: 'uppercase',
@@ -157,20 +165,20 @@ function EmailWarning({ email }: { email: string }) {
 
 // ─── Score display ────────────────────────────────────────────────────────────
 
-function ScoreGauge({ score, band }: { score: number; band: string }) {
+function ScoreGauge({ score, band, dark = false }: { score: number; band: string; dark?: boolean }) {
   const bandInfo = SCORE_BANDS.find(b => b.label === band) ?? SCORE_BANDS[1];
   return (
     <div className="flex flex-col items-center gap-3">
       <div
         className="w-36 h-36 rounded-full flex flex-col items-center justify-center"
-        style={{ border: `3px solid ${bandInfo.colour}`, backgroundColor: `${bandInfo.colour}10` }}
+        style={{ border: `3px solid ${bandInfo.colour}`, backgroundColor: `${bandInfo.colour}${dark ? '1a' : '10'}` }}
       >
         <span
-          style={{ color: bandInfo.colour, fontFamily: 'var(--font-playfair)', fontWeight: 700, fontSize: '3rem', lineHeight: 1 }}
+          style={{ color: dark ? R_CREAM : bandInfo.colour, fontFamily: 'var(--font-playfair)', fontWeight: 700, fontSize: '3rem', lineHeight: 1 }}
         >
           {Math.round(score)}
         </span>
-        <span className="text-xs mt-1" style={{ color: MUTED }}>out of 100</span>
+        <span className="text-xs mt-1" style={{ color: dark ? R_MUTED : MUTED }}>out of 100</span>
       </div>
       <Badge
         style={{ backgroundColor: bandInfo.colour, color: '#fff', letterSpacing: '0.05em' }}
@@ -182,23 +190,24 @@ function ScoreGauge({ score, band }: { score: number; band: string }) {
   );
 }
 
-function DimensionBar({ name, letter, score }: { name: string; letter: string; score: number }) {
+function DimensionBar({ name, letter, score, dark = false }: { name: string; letter: string; score: number; dark?: boolean }) {
   const pct = Math.round(score);
-  const color = pct >= 70 ? '#16a34a' : pct >= 40 ? '#d97706' : '#dc2626';
+  const color = pct >= 70 ? '#22c55e' : pct >= 40 ? '#f59e0b' : '#f87171';
+  const trackColor = dark ? 'rgba(255,255,255,0.07)' : CARD_BORDER;
   return (
     <div className="flex items-center gap-3">
       <div
-        className="w-7 h-7 flex items-center justify-center text-xs font-bold text-white shrink-0"
-        style={{ backgroundColor: NAVY, borderRadius: 2 }}
+        className="w-7 h-7 flex items-center justify-center text-xs font-bold shrink-0"
+        style={{ backgroundColor: dark ? GOLD : NAVY, color: dark ? '#0d1f3c' : '#fff', borderRadius: 2 }}
       >
         {letter}
       </div>
       <div className="flex-1 min-w-0">
         <div className="flex justify-between text-sm mb-1.5">
-          <span className="font-medium truncate" style={{ color: BODY }}>{name}</span>
+          <span className="font-medium truncate" style={{ color: dark ? R_CREAM : BODY }}>{name}</span>
           <span className="font-bold ml-2 shrink-0" style={{ color }}>{pct}</span>
         </div>
-        <div className="w-full h-1.5 rounded-full overflow-hidden" style={{ backgroundColor: CARD_BORDER }}>
+        <div className="w-full h-1.5 rounded-full overflow-hidden" style={{ backgroundColor: trackColor }}>
           <div className="h-1.5 rounded-full transition-all" style={{ width: `${pct}%`, backgroundColor: color }} />
         </div>
       </div>
@@ -929,134 +938,180 @@ export default function Home() {
     const scores = reportData.scores as ClearTrustScores;
     const report = reportData.report as GeneratedReportContent;
 
+    const parseParas = (text: string) =>
+      text.split(/\n+/).filter(s => s.trim().length > 10);
+
+    const RegLabel = ({ children }: { children: React.ReactNode }) => (
+      <p style={{ fontSize: 10, letterSpacing: '0.28em', textTransform: 'uppercase' as const, fontWeight: 600, marginBottom: 8, color: 'inherit' }}>
+        {children}
+      </p>
+    );
+
+    const SectionHeader = ({ eyebrow, title }: { eyebrow: string; title: string }) => (
+      <div style={{ borderBottom: `1px solid ${R_BORDER}`, padding: '20px 32px 16px' }}>
+        <p style={{ color: GOLD, fontSize: 10, letterSpacing: '0.32em', textTransform: 'uppercase', fontWeight: 600, marginBottom: 5 }}>
+          {eyebrow}
+        </p>
+        <h2 style={{ fontFamily: 'var(--font-playfair)', color: R_CREAM, fontWeight: 700, fontSize: '1.2rem', margin: 0, lineHeight: 1.3 }}>
+          {title}
+        </h2>
+      </div>
+    );
+
     return (
-      <div className="min-h-screen" style={{ backgroundColor: PAGE_BG }}>
-        <header className="px-6 py-4 bg-white flex justify-between items-center" style={{ borderBottom: `1px solid ${CARD_BORDER}` }}>
-          <NLLogo />
-          <div className="flex gap-2">
-            {reportData.pdfUrl && (
-              <a
-                href={reportData.pdfUrl}
-                download
-                className="inline-flex items-center gap-2 px-5 py-2.5 text-sm font-semibold text-white transition-opacity hover:opacity-90"
-                style={{ backgroundColor: GOLD, borderRadius: 2 }}
-              >
-                ↓ Download PDF
-              </a>
-            )}
-          </div>
+      <div className="min-h-screen" style={{ backgroundColor: R_BG }}>
+
+        {/* Header */}
+        <header
+          className="px-6 py-4 flex justify-between items-center"
+          style={{ backgroundColor: R_BG, borderBottom: `1px solid ${R_BORDER}` }}
+        >
+          <NLLogo dark />
+          {reportData.pdfUrl && (
+            <a
+              href={reportData.pdfUrl}
+              download
+              className="inline-flex items-center gap-2 px-5 py-2.5 text-sm font-semibold transition-opacity hover:opacity-90"
+              style={{ backgroundColor: GOLD, color: '#0d1f3c', borderRadius: 2 }}
+            >
+              ↓ Download PDF
+            </a>
+          )}
         </header>
-        <div className="h-0.5 w-full" style={{ background: `linear-gradient(90deg, ${NAVY} 0%, ${GOLD} 50%, ${NAVY} 100%)` }} />
+        <div style={{ height: 2, background: `linear-gradient(90deg, ${NAVY} 0%, ${GOLD} 50%, ${NAVY} 100%)` }} />
 
-        <main className="max-w-4xl mx-auto px-6 py-10 space-y-5">
+        <main className="max-w-4xl mx-auto px-6 py-10 space-y-4">
 
-          {/* Framework intro */}
-          <section
-            className="bg-white p-8"
-            style={{ border: `1px solid ${CARD_BORDER}`, borderLeft: `3px solid ${GOLD}`, borderRadius: 2 }}
-          >
-            <p className="text-xs font-semibold uppercase tracking-widest mb-2" style={{ color: GOLD }}>About This Report</p>
-            <h2 className="mb-3" style={{ fontFamily: 'var(--font-playfair)', color: NAVY, fontWeight: 700, fontSize: '1.25rem' }}>
-              Generated Using the CLEAR TRUST Framework
-            </h2>
-            <p className="text-sm leading-relaxed" style={{ color: BODY }}>
-              This report has been generated using the <strong>CLEAR TRUST Framework</strong> — NexterLaw&apos;s proprietary methodology for evaluating AI governance maturity in legal practice. Your organisation has been assessed against ten dimensions: Compliance, Literacy, Explainability, Accountability, Rights, Transparency, Reliability, Usage Governance, Security, and Traceability. All scores, findings, and recommendations presented here are derived directly from the framework&apos;s evaluation criteria and reflect your firm&apos;s responses to the self-assessment questionnaire.
-            </p>
+          {/* Score hero */}
+          <section style={{ backgroundColor: R_CARD, border: `1px solid ${R_BORDER}`, borderRadius: 4, overflow: 'hidden' }}>
+            <SectionHeader eyebrow="CLEAR TRUST Score" title={intake.firmName} />
+            <div className="p-8">
+              <div className="flex flex-col sm:flex-row items-center gap-8">
+                <ScoreGauge score={scores.headline} band={scores.band} dark />
+                <div className="flex-1 w-full space-y-4">
+                  {scores.dimensions.map(d => (
+                    <DimensionBar key={d.key} name={d.name} letter={d.letter} score={d.score} dark />
+                  ))}
+                </div>
+              </div>
+              {report?.scoreNarrative && (
+                <div className="mt-6 pt-6 space-y-3" style={{ borderTop: `1px solid ${R_BORDER}` }}>
+                  {parseParas(report.scoreNarrative).map((para, i) => (
+                    <p key={i} className="text-sm leading-relaxed" style={{ color: R_BODY }}>{para}</p>
+                  ))}
+                </div>
+              )}
+            </div>
           </section>
 
-          {/* Score */}
-          <section className="bg-white p-8" style={{ border: `1px solid ${CARD_BORDER}`, borderRadius: 2 }}>
-            <p className="text-xs font-semibold uppercase tracking-widest mb-4" style={{ color: GOLD }}>
-              CLEAR TRUST Score · {intake.firmName}
+          {/* About this report */}
+          <section style={{ backgroundColor: R_CARD, border: `1px solid ${R_BORDER}`, borderLeft: `3px solid ${GOLD}`, borderRadius: 4, padding: '24px 32px' }}>
+            <p style={{ color: GOLD, fontSize: 10, letterSpacing: '0.32em', textTransform: 'uppercase', fontWeight: 600, marginBottom: 8 }}>
+              About This Report
             </p>
-            <div className="flex flex-col sm:flex-row items-center gap-8">
-              <ScoreGauge score={scores.headline} band={scores.band} />
-              <div className="flex-1 w-full space-y-4">
-                {scores.dimensions.map(d => (
-                  <DimensionBar key={d.key} name={d.name} letter={d.letter} score={d.score} />
-                ))}
-              </div>
-            </div>
-            {report?.scoreNarrative && (
-              <p className="mt-6 text-sm leading-relaxed pt-5" style={{ borderTop: `1px solid ${CARD_BORDER}`, color: BODY }}>
-                {report.scoreNarrative}
-              </p>
-            )}
+            <h2 style={{ fontFamily: 'var(--font-playfair)', color: R_CREAM, fontWeight: 700, fontSize: '1.1rem', marginBottom: 12, lineHeight: 1.35 }}>
+              Generated Using the CLEAR TRUST Framework
+            </h2>
+            <p style={{ fontSize: '0.8125rem', lineHeight: 1.75, color: R_BODY }}>
+              This report has been generated using the <strong style={{ color: R_CREAM }}>CLEAR TRUST Framework</strong> — NexterLaw&apos;s proprietary methodology for evaluating AI governance maturity in legal practice. Your organisation has been assessed against ten dimensions: Compliance, Literacy, Explainability, Accountability, Rights, Transparency, Reliability, Usage Governance, Security, and Traceability. All scores, findings, and recommendations presented here are derived directly from the framework&apos;s evaluation criteria and reflect your firm&apos;s responses to the self-assessment questionnaire.
+            </p>
           </section>
 
           {/* Regulatory map */}
           {report?.regulatoryMap && (
-            <section className="bg-white p-8" style={{ border: `1px solid ${CARD_BORDER}`, borderRadius: 2 }}>
-              <p className="text-xs font-semibold uppercase tracking-widest mb-1" style={{ color: GOLD }}>Regulatory Framework</p>
-              <h2 className="mb-5" style={{ fontFamily: 'var(--font-playfair)', color: NAVY, fontWeight: 700, fontSize: '1.25rem' }}>
-                Your Regulatory Pressure Map
-              </h2>
-              <div className="space-y-3">
+            <section style={{ backgroundColor: R_CARD, border: `1px solid ${R_BORDER}`, borderRadius: 4, overflow: 'hidden' }}>
+              <SectionHeader eyebrow="Regulatory Framework" title="Your Regulatory Pressure Map" />
+              <div className="p-5 space-y-3">
+
                 {report.regulatoryMap.sra && (
-                  <div className="p-4" style={{ backgroundColor: `${NAVY}08`, border: `1px solid ${NAVY}20`, borderLeft: `3px solid ${NAVY}`, borderRadius: 2 }}>
-                    <p className="text-xs font-semibold uppercase tracking-wide mb-1.5" style={{ color: NAVY }}>SRA Expectations</p>
-                    <p className="text-sm" style={{ color: BODY }}>{report.regulatoryMap.sra}</p>
+                  <div style={{ backgroundColor: 'rgba(78,136,199,0.07)', border: '1px solid rgba(78,136,199,0.18)', borderLeft: '3px solid #4e88c7', borderRadius: 2, padding: '14px 18px', color: '#4e88c7' }}>
+                    <RegLabel>SRA Expectations</RegLabel>
+                    {parseParas(report.regulatoryMap.sra).map((para, i, arr) => (
+                      <p key={i} style={{ color: R_BODY, fontSize: '0.8125rem', lineHeight: 1.7, marginBottom: i < arr.length - 1 ? 8 : 0 }}>{para}</p>
+                    ))}
                   </div>
                 )}
+
                 {report.regulatoryMap.ukGdpr && (
-                  <div className="p-4" style={{ backgroundColor: `${STEEL}0d`, border: `1px solid ${STEEL}25`, borderLeft: `3px solid ${STEEL}`, borderRadius: 2 }}>
-                    <p className="text-xs font-semibold uppercase tracking-wide mb-1.5" style={{ color: STEEL }}>UK GDPR / ICO</p>
-                    <p className="text-sm" style={{ color: BODY }}>{report.regulatoryMap.ukGdpr}</p>
+                  <div style={{ backgroundColor: 'rgba(91,127,166,0.07)', border: '1px solid rgba(91,127,166,0.18)', borderLeft: `3px solid ${STEEL}`, borderRadius: 2, padding: '14px 18px', color: STEEL }}>
+                    <RegLabel>UK GDPR / ICO</RegLabel>
+                    {parseParas(report.regulatoryMap.ukGdpr).map((para, i, arr) => (
+                      <p key={i} style={{ color: R_BODY, fontSize: '0.8125rem', lineHeight: 1.7, marginBottom: i < arr.length - 1 ? 8 : 0 }}>{para}</p>
+                    ))}
                   </div>
                 )}
+
                 {report.regulatoryMap.pii && (
-                  <div className="p-4" style={{ backgroundColor: `${GOLD}0d`, border: `1px solid ${GOLD}30`, borderLeft: `3px solid ${GOLD}`, borderRadius: 2 }}>
-                    <p className="text-xs font-semibold uppercase tracking-wide mb-1.5" style={{ color: GOLD }}>Professional Indemnity Insurance</p>
-                    <p className="text-sm" style={{ color: BODY }}>{report.regulatoryMap.pii}</p>
+                  <div style={{ backgroundColor: 'rgba(184,144,42,0.07)', border: 'rgba(184,144,42,0.22) solid 1px', borderLeft: `3px solid ${GOLD}`, borderRadius: 2, padding: '14px 18px', color: GOLD }}>
+                    <RegLabel>Professional Indemnity Insurance</RegLabel>
+                    {parseParas(report.regulatoryMap.pii).map((para, i, arr) => (
+                      <p key={i} style={{ color: R_BODY, fontSize: '0.8125rem', lineHeight: 1.7, marginBottom: i < arr.length - 1 ? 8 : 0 }}>{para}</p>
+                    ))}
                   </div>
                 )}
+
                 {report.regulatoryMap.clientProcurement && (
-                  <div className="p-4" style={{ backgroundColor: '#f5f3ef', border: `1px solid ${CARD_BORDER}`, borderLeft: `3px solid ${BODY}`, borderRadius: 2 }}>
-                    <p className="text-xs font-semibold uppercase tracking-wide mb-1.5" style={{ color: BODY }}>Client Procurement Pressure</p>
-                    <p className="text-sm" style={{ color: BODY }}>{report.regulatoryMap.clientProcurement}</p>
+                  <div style={{ backgroundColor: 'rgba(255,255,255,0.03)', border: '1px solid rgba(255,255,255,0.09)', borderLeft: '3px solid rgba(158,180,210,0.5)', borderRadius: 2, padding: '14px 18px', color: '#8a9bb0' }}>
+                    <RegLabel>Client Procurement Pressure</RegLabel>
+                    {parseParas(report.regulatoryMap.clientProcurement).map((para, i, arr) => (
+                      <p key={i} style={{ color: R_BODY, fontSize: '0.8125rem', lineHeight: 1.7, marginBottom: i < arr.length - 1 ? 8 : 0 }}>{para}</p>
+                    ))}
                   </div>
                 )}
+
                 {report.regulatoryMap.euAiAct && (
-                  <div className="p-4" style={{ backgroundColor: `${NAVY}06`, border: `1px solid ${GOLD}40`, borderLeft: `3px solid ${GOLD}`, borderRadius: 2 }}>
-                    <p className="text-xs font-semibold uppercase tracking-wide mb-1.5" style={{ color: GOLD }}>EU AI Act (Applicable)</p>
-                    <p className="text-sm" style={{ color: BODY }}>{report.regulatoryMap.euAiAct}</p>
+                  <div style={{ backgroundColor: 'rgba(184,144,42,0.09)', border: '1px solid rgba(184,144,42,0.28)', borderLeft: '3px solid #c9a030', borderRadius: 2, padding: '14px 18px', color: '#c9a030' }}>
+                    <RegLabel>EU AI Act (Applicable)</RegLabel>
+                    {parseParas(report.regulatoryMap.euAiAct).map((para, i, arr) => (
+                      <p key={i} style={{ color: R_BODY, fontSize: '0.8125rem', lineHeight: 1.7, marginBottom: i < arr.length - 1 ? 8 : 0 }}>{para}</p>
+                    ))}
                   </div>
                 )}
+
               </div>
             </section>
           )}
 
           {/* Shadow AI */}
           {report?.shadowAi && (
-            <section className="bg-white p-8" style={{ border: `1px solid ${CARD_BORDER}`, borderRadius: 2 }}>
-              <p className="text-xs font-semibold uppercase tracking-widest mb-1" style={{ color: GOLD }}>Risk Profile</p>
-              <h2 className="mb-3" style={{ fontFamily: 'var(--font-playfair)', color: NAVY, fontWeight: 700, fontSize: '1.25rem' }}>
+            <section style={{ backgroundColor: 'rgba(180,83,9,0.07)', border: '1px solid rgba(180,83,9,0.2)', borderLeft: '3px solid #d97706', borderRadius: 4, padding: '24px 32px' }}>
+              <p style={{ color: '#d97706', fontSize: 10, letterSpacing: '0.32em', textTransform: 'uppercase', fontWeight: 600, marginBottom: 8 }}>
+                Risk Profile
+              </p>
+              <h2 style={{ fontFamily: 'var(--font-playfair)', color: R_CREAM, fontWeight: 700, fontSize: '1.1rem', marginBottom: 14, lineHeight: 1.35 }}>
                 Shadow AI: The Question Most Firms Cannot Answer
               </h2>
-              <p className="text-sm leading-relaxed" style={{ color: BODY }}>{report.shadowAi}</p>
+              <div className="space-y-3">
+                {parseParas(report.shadowAi).map((para, i) => (
+                  <p key={i} style={{ fontSize: '0.8125rem', lineHeight: 1.75, color: R_BODY }}>{para}</p>
+                ))}
+              </div>
             </section>
           )}
 
           {/* Opportunities */}
           {report?.opportunities?.length > 0 && (
-            <section className="bg-white p-8" style={{ border: `1px solid ${CARD_BORDER}`, borderRadius: 2 }}>
-              <p className="text-xs font-semibold uppercase tracking-widest mb-1" style={{ color: GOLD }}>Opportunities</p>
-              <h2 className="mb-5" style={{ fontFamily: 'var(--font-playfair)', color: NAVY, fontWeight: 700, fontSize: '1.25rem' }}>
-                Top 3 AI Opportunities for Your Practice
-              </h2>
-              <div className="space-y-3">
+            <section style={{ backgroundColor: R_CARD, border: `1px solid ${R_BORDER}`, borderRadius: 4, overflow: 'hidden' }}>
+              <SectionHeader eyebrow="Opportunities" title="Top AI Opportunities for Your Practice" />
+              <div className="p-5 space-y-3">
                 {report.opportunities.slice(0, 3).map((opp, i) => (
-                  <div key={i} className="flex gap-4 p-4" style={{ backgroundColor: `${NAVY}06`, border: `1px solid ${NAVY}15`, borderRadius: 2 }}>
+                  <div
+                    key={i}
+                    style={{ display: 'flex', gap: 16, padding: '16px 18px', backgroundColor: 'rgba(184,144,42,0.06)', border: '1px solid rgba(184,144,42,0.14)', borderRadius: 2 }}
+                  >
                     <div
-                      className="flex items-center justify-center font-bold text-sm shrink-0 text-white"
-                      style={{ width: 32, height: 32, backgroundColor: NAVY, borderRadius: 2, fontFamily: 'var(--font-playfair)' }}
+                      style={{ width: 42, height: 42, backgroundColor: GOLD, borderRadius: 2, display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0 }}
                     >
-                      {String(i + 1).padStart(2, '0')}
+                      <span style={{ color: '#0d1f3c', fontFamily: 'var(--font-playfair)', fontWeight: 700, fontSize: 14 }}>
+                        {String(i + 1).padStart(2, '0')}
+                      </span>
                     </div>
                     <div>
-                      <p className="font-semibold text-sm" style={{ color: NAVY }}>{opp.title}</p>
-                      <p className="text-sm mt-1" style={{ color: BODY }}>{opp.benefit}</p>
-                      {opp.toolCategory && <p className="text-xs mt-1 italic" style={{ color: MUTED }}>e.g. {opp.toolCategory}</p>}
+                      <p style={{ color: R_CREAM, fontSize: '0.875rem', fontWeight: 600, marginBottom: 5 }}>{opp.title}</p>
+                      <p style={{ color: R_BODY, fontSize: '0.8125rem', lineHeight: 1.65 }}>{opp.benefit}</p>
+                      {opp.toolCategory && (
+                        <p style={{ color: R_MUTED, fontSize: '0.75rem', marginTop: 5, fontStyle: 'italic' }}>e.g. {opp.toolCategory}</p>
+                      )}
                     </div>
                   </div>
                 ))}
@@ -1066,39 +1121,34 @@ export default function Home() {
 
           {/* Exposures */}
           {report?.exposures?.length > 0 && (
-            <section className="bg-white p-8" style={{ border: `1px solid ${CARD_BORDER}`, borderRadius: 2 }}>
-              <p className="text-xs font-semibold uppercase tracking-widest mb-1" style={{ color: GOLD }}>Risk Assessment</p>
-              <h2 className="mb-5" style={{ fontFamily: 'var(--font-playfair)', color: NAVY, fontWeight: 700, fontSize: '1.25rem' }}>
-                Top 3 Exposure Areas
-              </h2>
-              <div className="space-y-3">
+            <section style={{ backgroundColor: R_CARD, border: `1px solid ${R_BORDER}`, borderRadius: 4, overflow: 'hidden' }}>
+              <SectionHeader eyebrow="Risk Assessment" title="Top Exposure Areas" />
+              <div className="p-5 space-y-3">
                 {report.exposures.slice(0, 3).map((exp, i) => {
-                  const sevColor = exp.severity === 'HIGH' ? '#b91c1c' : exp.severity === 'MEDIUM' ? '#b45309' : '#6b7280';
-                  const sevBg = exp.severity === 'HIGH' ? '#fef2f2' : exp.severity === 'MEDIUM' ? '#fffbeb' : '#f9fafb';
-                  const sevBorder = exp.severity === 'HIGH' ? '#fecaca' : exp.severity === 'MEDIUM' ? '#fde68a' : '#e5e7eb';
+                  const sev = exp.severity;
+                  const sevColor = sev === 'HIGH' ? '#f87171' : sev === 'MEDIUM' ? '#fbbf24' : '#94a3b8';
+                  const sevBg = sev === 'HIGH' ? 'rgba(248,113,113,0.07)' : sev === 'MEDIUM' ? 'rgba(251,191,36,0.07)' : 'rgba(255,255,255,0.03)';
+                  const sevBorder = sev === 'HIGH' ? 'rgba(248,113,113,0.18)' : sev === 'MEDIUM' ? 'rgba(251,191,36,0.18)' : 'rgba(255,255,255,0.07)';
                   return (
                     <div
                       key={i}
-                      className="flex gap-4 p-4"
-                      style={{ backgroundColor: sevBg, border: `1px solid ${sevBorder}`, borderLeft: `3px solid ${sevColor}`, borderRadius: 2 }}
+                      style={{ display: 'flex', gap: 16, padding: '16px 18px', backgroundColor: sevBg, border: `1px solid ${sevBorder}`, borderLeft: `3px solid ${sevColor}`, borderRadius: 2 }}
                     >
                       <div
-                        className="flex items-center justify-center font-bold text-sm shrink-0 text-white"
-                        style={{ width: 32, height: 32, backgroundColor: sevColor, borderRadius: 2, fontFamily: 'var(--font-playfair)' }}
+                        style={{ width: 42, height: 42, backgroundColor: sevColor, borderRadius: 2, display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0 }}
                       >
-                        {String(i + 1).padStart(2, '0')}
+                        <span style={{ color: sev === 'LOW' ? '#1e293b' : '#0d1f3c', fontFamily: 'var(--font-playfair)', fontWeight: 700, fontSize: 14 }}>
+                          {String(i + 1).padStart(2, '0')}
+                        </span>
                       </div>
-                      <div>
-                        <div className="flex items-center gap-2 mb-1">
-                          <p className="font-semibold text-sm" style={{ color: BODY }}>{exp.title}</p>
-                          <span
-                            className="text-xs font-semibold uppercase tracking-wide px-2 py-0.5"
-                            style={{ color: sevColor, border: `1px solid ${sevColor}40`, borderRadius: 2 }}
-                          >
+                      <div style={{ flex: 1 }}>
+                        <div style={{ display: 'flex', alignItems: 'center', gap: 8, marginBottom: 5 }}>
+                          <p style={{ color: R_CREAM, fontSize: '0.875rem', fontWeight: 600 }}>{exp.title}</p>
+                          <span style={{ color: sevColor, border: `1px solid ${sevColor}50`, borderRadius: 2, padding: '2px 6px', fontSize: '0.625rem', fontWeight: 700, letterSpacing: '0.1em', textTransform: 'uppercase' }}>
                             {exp.severity}
                           </span>
                         </div>
-                        <p className="text-sm" style={{ color: BODY }}>{exp.description}</p>
+                        <p style={{ color: R_BODY, fontSize: '0.8125rem', lineHeight: 1.65 }}>{exp.description}</p>
                       </div>
                     </div>
                   );
@@ -1107,9 +1157,15 @@ export default function Home() {
             </section>
           )}
 
-          <p className="text-center text-xs pb-6" style={{ color: MUTED }}>
-            CLEAR TRUST is a proprietary framework by Dr. Siamak Goudarzi / NexterLaw. This Snapshot is general information, not legal or regulatory advice. © NexterLaw
-          </p>
+          {/* Footer */}
+          <div style={{ borderTop: `1px solid ${R_BORDER}`, paddingTop: 24, paddingBottom: 16 }}>
+            <p style={{ textAlign: 'center', fontSize: '0.6875rem', color: R_MUTED, letterSpacing: '0.04em', lineHeight: 1.7 }}>
+              CLEAR TRUST is a proprietary framework by Dr. Siamak Goudarzi / NexterLaw.
+              <br />
+              This Snapshot is general information, not legal or regulatory advice. © NexterLaw
+            </p>
+          </div>
+
         </main>
       </div>
     );
