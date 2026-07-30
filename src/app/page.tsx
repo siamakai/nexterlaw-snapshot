@@ -318,109 +318,199 @@ export default function Home() {
         <div style={{ height: 2, background: `linear-gradient(90deg, ${NAVY} 0%, ${GOLD} 50%, ${NAVY} 100%)` }} />
 
         {/* Hero */}
-        <main className="flex-1 flex flex-col items-center justify-center px-5 py-12 sm:py-16 text-center max-w-3xl mx-auto w-full gap-7">
+        <main className="flex-1 flex flex-col lg:flex-row items-center justify-center px-5 py-10 sm:py-14 max-w-6xl mx-auto w-full gap-10 lg:gap-14">
 
-          {/* Eyebrow pill */}
-          <div
-            className="inline-flex items-center gap-2 px-4 py-2 text-xs font-semibold uppercase tracking-widest"
-            style={{
-              backgroundColor: 'rgba(184,144,42,0.12)',
-              color: GOLD,
-              border: '1px solid rgba(184,144,42,0.3)',
-              borderRadius: 2,
-            }}
-          >
-            AI Readiness Snapshot · Free · 3 minutes
-          </div>
+          {/* Entrance animation keyframes */}
+          <style dangerouslySetInnerHTML={{ __html: `
+            @keyframes heroFadeUp {
+              from { opacity: 0; transform: translateY(22px); }
+              to   { opacity: 1; transform: translateY(0); }
+            }
+            @keyframes heroFadeIn {
+              from { opacity: 0; }
+              to   { opacity: 1; }
+            }
+            @keyframes heroScale {
+              from { opacity: 0; transform: scale(0.975); }
+              to   { opacity: 1; transform: scale(1); }
+            }
+            @media (prefers-reduced-motion: reduce) {
+              .hero-anim {
+                animation-duration: 0.01ms !important;
+                animation-delay: 0.01ms !important;
+              }
+            }
+          `}} />
 
-          {/* Heading */}
-          <h1
-            style={{
-              fontFamily: 'var(--font-playfair)',
-              color: R_CREAM,
-              fontWeight: 700,
-              fontSize: 'clamp(1.85rem, 5vw, 3.25rem)',
-              lineHeight: 1.2,
-              maxWidth: 680,
-            }}
-          >
-            What AI is your firm actually using — and can you evidence control of it?
-          </h1>
+          {/* ── Left: text content ─────────────────────────────── */}
+          <div className="flex flex-col items-center lg:items-start text-center lg:text-left gap-6 w-full lg:flex-1">
 
-          {/* Gold ornamental divider */}
-          <div className="flex items-center gap-4 w-full max-w-xs mx-auto">
-            <div className="flex-1 h-px" style={{ backgroundColor: 'rgba(184,144,42,0.2)' }} />
-            <div className="w-8 h-0.5" style={{ backgroundColor: GOLD }} />
-            <div className="flex-1 h-px" style={{ backgroundColor: 'rgba(184,144,42,0.2)' }} />
-          </div>
-
-          {/* Sub-heading */}
-          <p className="text-base max-w-xl leading-relaxed" style={{ color: R_BODY }}>
-            Get your free AI Readiness Snapshot. We score your firm across our CLEAR TRUST framework — ten dimensions of AI control — and show you where the regulatory exposure lies.
-          </p>
-
-          {/* Framework info card */}
-          <div
-            className="text-left text-sm w-full max-w-xl p-6"
-            style={{
-              backgroundColor: R_CARD,
-              border: `1px solid ${R_BORDER}`,
-              borderLeft: `3px solid ${GOLD}`,
-              borderRadius: 2,
-            }}
-          >
-            <p
-              className="text-xs font-semibold uppercase tracking-widest mb-3"
-              style={{ color: GOLD }}
+            {/* Eyebrow pill */}
+            <div
+              className="hero-anim"
+              style={{ animation: 'heroFadeUp 0.7s ease-out 0ms forwards', opacity: 0 }}
             >
-              About the CLEAR TRUST Framework
+              <div
+                className="inline-flex items-center gap-2 px-4 py-2 text-xs font-semibold uppercase tracking-widest"
+                style={{
+                  backgroundColor: 'rgba(184,144,42,0.12)',
+                  color: GOLD,
+                  border: '1px solid rgba(184,144,42,0.3)',
+                  borderRadius: 2,
+                }}
+              >
+                AI Readiness Snapshot · Free · 3 minutes
+              </div>
+            </div>
+
+            {/* Heading — forced two-line break */}
+            <h1
+              className="hero-anim"
+              style={{
+                animation: 'heroFadeUp 0.8s ease-out 0.12s forwards',
+                opacity: 0,
+                fontFamily: 'var(--font-playfair)',
+                color: R_CREAM,
+                fontWeight: 700,
+                fontSize: 'clamp(1.85rem, 4.5vw, 3.2rem)',
+                lineHeight: 1.2,
+              }}
+            >
+              <span style={{ display: 'block' }}>What AI is your firm actually using —</span>
+              <span style={{ display: 'block' }}>and can you evidence control of it?</span>
+            </h1>
+
+            {/* Gold ornamental divider */}
+            <div
+              className="hero-anim flex items-center gap-4 w-full max-w-xs"
+              style={{ animation: 'heroFadeIn 0.7s ease-out 0.26s forwards', opacity: 0 }}
+            >
+              <div className="flex-1 h-px" style={{ backgroundColor: 'rgba(184,144,42,0.2)' }} />
+              <div className="w-8 h-0.5" style={{ backgroundColor: GOLD }} />
+              <div className="flex-1 h-px" style={{ backgroundColor: 'rgba(184,144,42,0.2)' }} />
+            </div>
+
+            {/* Sub-heading */}
+            <p
+              className="hero-anim"
+              style={{
+                animation: 'heroFadeUp 0.8s ease-out 0.34s forwards',
+                opacity: 0,
+                fontSize: '1rem',
+                lineHeight: 1.75,
+                color: R_BODY,
+                maxWidth: '32rem',
+              }}
+            >
+              Get your free AI Readiness Snapshot. We score your firm across our CLEAR TRUST framework — ten dimensions of AI control — and show you where the regulatory exposure lies.
             </p>
-            <p className="leading-relaxed" style={{ color: R_BODY }}>
-              This assessment is structured around the{' '}
-              <strong style={{ color: R_CREAM }}>CLEAR TRUST Framework</strong> — NexterLaw&apos;s
-              proprietary methodology for evaluating AI governance maturity in legal practice.
-              Your firm is assessed across ten defined dimensions: Compliance, Literacy,
-              Explainability, Accountability, Rights, Transparency, Reliability, Usage Governance,
-              Security, and Traceability. The report, scores, findings, and recommendations are all
-              based on the framework&apos;s criteria and evaluation methodology.
-            </p>
+
+            {/* Framework info card */}
+            <div
+              className="hero-anim w-full text-left"
+              style={{ animation: 'heroFadeUp 0.8s ease-out 0.46s forwards', opacity: 0 }}
+            >
+              <div
+                style={{
+                  backgroundColor: R_CARD,
+                  border: `1px solid ${R_BORDER}`,
+                  borderLeft: `3px solid ${GOLD}`,
+                  borderRadius: 2,
+                  padding: '20px 24px',
+                }}
+              >
+                <p
+                  style={{
+                    fontSize: 10,
+                    fontWeight: 600,
+                    textTransform: 'uppercase',
+                    letterSpacing: '0.3em',
+                    color: GOLD,
+                    marginBottom: 10,
+                  }}
+                >
+                  About the CLEAR TRUST Framework
+                </p>
+                <p style={{ fontSize: '0.8125rem', lineHeight: 1.75, color: R_BODY }}>
+                  This assessment is structured around the{' '}
+                  <strong style={{ color: R_CREAM }}>CLEAR TRUST Framework</strong> — NexterLaw&apos;s
+                  proprietary methodology for evaluating AI governance maturity in legal practice.
+                  Your firm is assessed across ten defined dimensions: Compliance, Literacy,
+                  Explainability, Accountability, Rights, Transparency, Reliability, Usage Governance,
+                  Security, and Traceability. The report, scores, findings, and recommendations are all
+                  based on the framework&apos;s criteria and evaluation methodology.
+                </p>
+              </div>
+            </div>
+
+            {/* Primary CTA */}
+            <div
+              className="hero-anim"
+              style={{ animation: 'heroFadeUp 0.7s ease-out 0.58s forwards', opacity: 0 }}
+            >
+              <button
+                onClick={() => setStep('intake')}
+                className="inline-flex items-center gap-3 px-10 py-4 text-base font-semibold transition-opacity hover:opacity-90"
+                style={{ backgroundColor: GOLD, color: '#0d1f3c', borderRadius: 2 }}
+              >
+                Get Your Free Snapshot
+                <span>→</span>
+              </button>
+            </div>
+
+            {/* Steps */}
+            <div
+              className="hero-anim grid grid-cols-3 gap-4 w-full pt-6"
+              style={{
+                animation: 'heroFadeIn 0.7s ease-out 0.68s forwards',
+                opacity: 0,
+                borderTop: `1px solid ${R_BORDER}`,
+              }}
+            >
+              {[
+                { num: '01', label: '5 firm details' },
+                { num: '02', label: '10 quick questions' },
+                { num: '03', label: 'Personalised PDF report' },
+              ].map(item => (
+                <div key={item.num} className="flex flex-col items-center gap-2">
+                  <span
+                    style={{
+                      fontSize: '1.5rem',
+                      fontWeight: 700,
+                      color: GOLD,
+                      fontFamily: 'var(--font-playfair)',
+                    }}
+                  >
+                    {item.num}
+                  </span>
+                  <span style={{ fontSize: '0.7rem', textAlign: 'center', lineHeight: 1.4, color: R_MUTED }}>
+                    {item.label}
+                  </span>
+                </div>
+              ))}
+            </div>
+
           </div>
 
-          {/* Primary CTA */}
-          <button
-            onClick={() => setStep('intake')}
-            className="inline-flex items-center gap-3 px-10 py-4 text-base font-semibold transition-opacity hover:opacity-90"
-            style={{ backgroundColor: GOLD, color: '#0d1f3c', borderRadius: 2 }}
-          >
-            Get Your Free Snapshot
-            <span>→</span>
-          </button>
-
-          {/* Steps */}
+          {/* ── Right: hero image ──────────────────────────────── */}
           <div
-            className="grid grid-cols-3 gap-4 w-full max-w-lg pt-7"
-            style={{ borderTop: `1px solid ${R_BORDER}` }}
+            className="hero-anim w-full flex-shrink-0 lg:w-[44%]"
+            style={{ animation: 'heroScale 1.0s ease-out 0.18s forwards', opacity: 0 }}
           >
-            {[
-              { num: '01', label: '5 firm details' },
-              { num: '02', label: '10 quick questions' },
-              { num: '03', label: 'Personalised PDF report' },
-            ].map(item => (
-              <div key={item.num} className="flex flex-col items-center gap-2">
-                <span
-                  className="text-2xl font-bold"
-                  style={{ color: GOLD, fontFamily: 'var(--font-playfair)' }}
-                >
-                  {item.num}
-                </span>
-                <span
-                  className="text-xs text-center leading-snug"
-                  style={{ color: R_MUTED }}
-                >
-                  {item.label}
-                </span>
-              </div>
-            ))}
+            <img
+              src="/hero.jpg"
+              alt="AI governance assessment interface"
+              style={{
+                width: '100%',
+                height: 'auto',
+                maxHeight: 580,
+                objectFit: 'cover',
+                objectPosition: 'center top',
+                borderRadius: 12,
+                boxShadow: '0 20px 60px rgba(0,0,0,0.55), 0 0 0 1px rgba(184,144,42,0.12)',
+                display: 'block',
+              }}
+            />
           </div>
 
         </main>
