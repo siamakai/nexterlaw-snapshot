@@ -5,6 +5,21 @@ import { generateReport } from './report-generator';
 import { sendDay0Email } from './email';
 import type { SelfAssessmentAnswers, IntakeData } from '@/types';
 
+function extractErrorMessage(err: unknown): string {
+  const raw = err instanceof Error ? err.message : String(err);
+  // Anthropic SDK error format: "400 {\"type\":\"error\",\"error\":{\"message\":\"...\"}}"
+  const jsonStart = raw.indexOf('{');
+  if (jsonStart !== -1) {
+    try {
+      const parsed = JSON.parse(raw.slice(jsonStart)) as { error?: { message?: string } };
+      if (parsed.error?.message) return parsed.error.message;
+    } catch {
+      // fall through to raw
+    }
+  }
+  return raw;
+}
+
 export async function runGenerationPipeline(submissionId: string): Promise<void> {
   const startTime = Date.now();
 
@@ -119,7 +134,7 @@ export async function runGenerationPipeline(submissionId: string): Promise<void>
       data: { status: 'COMPLETE' },
     });
   } catch (err) {
-    const reason = err instanceof Error ? err.message : String(err);
+    const reason = extractErrorMessage(err);
     await prisma.submission
       .update({ where: { id: submissionId }, data: { status: 'FAILED', failureReason: reason } })
       .catch(() => {});
