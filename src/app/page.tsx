@@ -720,17 +720,25 @@ export default function Home() {
               </div>
             </div>
 
-            {/* Divider */}
-            <div className="flex items-center gap-3 mb-8">
-              <div className="flex-1 h-px bg-gray-100" />
+            {/* Divider — CLEAR · · · TRUST */}
+            <div className="flex items-center gap-3 mb-1">
               <span
-                className="text-[10px] uppercase tracking-[0.25em] font-semibold"
+                className="text-[11px] uppercase tracking-[0.3em] font-bold shrink-0"
                 style={{ color: '#B8902A' }}
               >
-                CLEAR TRUST Framework
+                CLEAR
               </span>
-              <div className="flex-1 h-px bg-gray-100" />
+              <div className="flex-1 h-px bg-gray-200" />
+              <div className="w-1 h-1 rounded-full shrink-0" style={{ backgroundColor: '#B8902A' }} />
+              <div className="flex-1 h-px bg-gray-200" />
+              <span
+                className="text-[11px] uppercase tracking-[0.3em] font-bold shrink-0"
+                style={{ color: '#B8902A' }}
+              >
+                TRUST
+              </span>
             </div>
+            <p className="text-[9px] uppercase tracking-[0.35em] text-center text-gray-400 mb-8">Framework</p>
 
             {/* CLEAR TRUST letter grid — 2 columns */}
             <div className="grid grid-cols-2 gap-x-8 gap-y-3 mb-8">
@@ -770,6 +778,11 @@ export default function Home() {
               ))}
             </div>
 
+            {/* Framework explanation */}
+            <p className="text-xs text-gray-500 text-center mb-6 leading-relaxed">
+              Your report is being generated using the <span className="font-semibold" style={{ color: '#1a3a6b' }}>CLEAR TRUST Framework</span> — NexterLaw&apos;s proprietary methodology for assessing AI governance maturity. Your responses are evaluated against the framework&apos;s ten dimensions and criteria to produce your personalised findings.
+            </p>
+
             {/* Progress */}
             <Progress value={pollProgress} className="h-1" />
             <p className="text-xs text-gray-400 mt-2 text-center">This takes around 30–60 seconds</p>
@@ -804,6 +817,15 @@ export default function Home() {
         <div className="h-0.5 w-full" style={{ background: 'linear-gradient(90deg, #1a3a6b 0%, #B8902A 50%, #1a3a6b 100%)' }} />
 
         <main className="max-w-4xl mx-auto px-6 py-10 space-y-6">
+
+          {/* Framework introduction */}
+          <section className="bg-white rounded-2xl border border-gray-100 shadow-sm p-8">
+            <p className="text-xs font-semibold uppercase tracking-widest mb-2" style={{ color: '#B8902A' }}>About This Report</p>
+            <h2 className="text-lg font-bold text-gray-900 mb-3" style={{ fontFamily: 'var(--font-playfair)' }}>Generated Using the CLEAR TRUST Framework</h2>
+            <p className="text-sm text-gray-700 leading-relaxed">
+              This report has been generated using the <strong>CLEAR TRUST Framework</strong> — NexterLaw&apos;s proprietary methodology for evaluating AI governance maturity in legal practice. Your organisation has been assessed against ten dimensions: Compliance, Literacy, Explainability, Accountability, Rights, Transparency, Reliability, Usage Governance, Security, and Traceability. All scores, findings, and recommendations presented here are derived directly from the framework&apos;s evaluation criteria and reflect your firm&apos;s responses to the self-assessment questionnaire.
+            </p>
+          </section>
 
           {/* Score */}
           <section className="bg-white rounded-2xl border border-gray-100 shadow-sm p-8">
