@@ -732,23 +732,23 @@ export default function Home() {
               </div>
             </div>
 
-            {/* Divider — CLEAR · · · TRUST */}
-            <div className="flex items-center gap-3 mb-1">
-              <span
-                className="text-[11px] uppercase tracking-[0.3em] font-bold shrink-0"
-                style={{ color: '#B8902A' }}
-              >
-                CLEAR
-              </span>
-              <div className="flex-1 h-px bg-gray-200" />
-              <div className="w-1 h-1 rounded-full shrink-0" style={{ backgroundColor: '#B8902A' }} />
-              <div className="flex-1 h-px bg-gray-200" />
-              <span
-                className="text-[11px] uppercase tracking-[0.3em] font-bold shrink-0"
-                style={{ color: '#B8902A' }}
-              >
-                TRUST
-              </span>
+            {/* Divider — CLEAR (stacked) | line | TRUST (stacked) */}
+            <div className="flex items-center justify-center gap-8 mb-3">
+              <div className="flex flex-col items-center" style={{ gap: 6 }}>
+                {['C','L','E','A','R'].map(letter => (
+                  <span key={letter} className="font-bold" style={{ color: '#B8902A', fontSize: 13, letterSpacing: '0.12em', lineHeight: 1 }}>
+                    {letter}
+                  </span>
+                ))}
+              </div>
+              <div className="self-stretch w-px bg-gray-200" />
+              <div className="flex flex-col items-center" style={{ gap: 6 }}>
+                {['T','R','U','S','T'].map((letter, i) => (
+                  <span key={i} className="font-bold" style={{ color: '#B8902A', fontSize: 13, letterSpacing: '0.12em', lineHeight: 1 }}>
+                    {letter}
+                  </span>
+                ))}
+              </div>
             </div>
             <p className="text-[9px] uppercase tracking-[0.35em] text-center text-gray-400 mb-8">Framework</p>
 
