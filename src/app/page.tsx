@@ -312,6 +312,18 @@ export default function Home() {
             Get your free AI Readiness Snapshot. We score your firm across our CLEAR TRUST framework — ten dimensions of AI control — and show you where the regulatory exposure lies.
           </p>
 
+          <div
+            className="text-left text-sm rounded-xl p-5 max-w-xl w-full"
+            style={{ backgroundColor: '#1a3a6b08', border: '1px solid #1a3a6b20' }}
+          >
+            <p className="text-xs font-semibold uppercase tracking-widest mb-2" style={{ color: '#B8902A' }}>
+              About the CLEAR TRUST Framework
+            </p>
+            <p className="text-gray-600 leading-relaxed">
+              This assessment is structured around the <strong style={{ color: '#1a3a6b' }}>CLEAR TRUST Framework</strong> — NexterLaw&apos;s proprietary methodology for evaluating AI governance maturity in legal practice. Your firm is assessed across ten defined dimensions: Compliance, Literacy, Explainability, Accountability, Rights, Transparency, Reliability, Usage Governance, Security, and Traceability. The report, scores, findings, and recommendations are all based on the framework&apos;s criteria and evaluation methodology.
+            </p>
+          </div>
+
           <div className="flex flex-col sm:flex-row gap-3 w-full sm:w-auto justify-center">
             <Button
               size="lg"

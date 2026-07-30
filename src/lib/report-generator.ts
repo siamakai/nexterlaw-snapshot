@@ -55,6 +55,7 @@ TONE RULES:
 - Professional yet accessible — avoid unexplained jargon
 - Factual and measured — no alarmist language, no marketing hyperbole
 - Address the firm in second person plural: "your firm", "you are", "your fee-earners"
+- Do not begin any sentence with the word "And"
 ${
   includeEuAiAct
     ? ''
