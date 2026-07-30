@@ -345,6 +345,9 @@ export default function Home() {
               to   { transform: scale(1); }
             }
             .hero-bg { animation: heroBgZoom 7s ease-out forwards; }
+            @media (max-width: 767px) {
+              .hero-bg { object-position: 18% 30%; }
+            }
             @media (prefers-reduced-motion: reduce) {
               .hero-anim { animation-duration: 0.01ms !important; animation-delay: 0.01ms !important; }
               .hero-bg   { animation: none !important; }
