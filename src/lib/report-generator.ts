@@ -19,12 +19,28 @@ export interface GenerationResult {
   report: GeneratedReportContent;
   rawResponse: string;
   modelUsed: string;
+  requestId: string;
   inputTokens: number;
   outputTokens: number;
+  estimatedCostUsd: number;
 }
 
 const MODEL = 'claude-opus-4-8';
 const MAX_RETRIES = 2;
+
+// Anthropic pricing as of 2026-07 (per 1M tokens)
+const MODEL_PRICING: Record<string, { inputPer1M: number; outputPer1M: number }> = {
+  'claude-opus-4-8':   { inputPer1M: 5.0,  outputPer1M: 25.0 },
+  'claude-opus-4-7':   { inputPer1M: 5.0,  outputPer1M: 25.0 },
+  'claude-sonnet-4-6': { inputPer1M: 3.0,  outputPer1M: 15.0 },
+  'claude-haiku-4-5':  { inputPer1M: 1.0,  outputPer1M: 5.0  },
+};
+
+function estimateCost(model: string, inputTokens: number, outputTokens: number): number {
+  const pricing = MODEL_PRICING[model] ?? MODEL_PRICING['claude-opus-4-8'];
+  return (inputTokens / 1_000_000) * pricing.inputPer1M +
+         (outputTokens / 1_000_000) * pricing.outputPer1M;
+}
 
 const FIRM_SIZE_LABELS: Record<string, string> = {
   MICRO: '1–4 fee-earners',
@@ -233,12 +249,24 @@ export async function generateReport(
         delete parsed.regulatoryMap.euAiAct;
       }
 
+      const inputTokens = message.usage.input_tokens;
+      const outputTokens = message.usage.output_tokens;
+      const cost = estimateCost(message.model, inputTokens, outputTokens);
+
+      console.log(
+        `[report-generator] model=${message.model} id=${message.id}` +
+        ` input=${inputTokens} output=${outputTokens} total=${inputTokens + outputTokens}` +
+        ` cost=$${cost.toFixed(6)}`,
+      );
+
       return {
         report: parsed,
         rawResponse,
         modelUsed: message.model,
-        inputTokens: message.usage.input_tokens,
-        outputTokens: message.usage.output_tokens,
+        requestId: message.id,
+        inputTokens,
+        outputTokens,
+        estimatedCostUsd: cost,
       };
     } catch (err) {
       lastError = err instanceof Error ? err : new Error(String(err));

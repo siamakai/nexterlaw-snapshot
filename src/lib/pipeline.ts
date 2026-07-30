@@ -3,6 +3,7 @@ import { computeScores } from './scoring';
 import { retrieveKnowledgeBaseEntries } from './knowledge-retrieval';
 import { generateReport } from './report-generator';
 import { sendDay0Email } from './email';
+import { appendUsageRow } from './google-sheets';
 import type { SelfAssessmentAnswers, IntakeData } from '@/types';
 
 function extractErrorMessage(err: unknown): string {
@@ -93,7 +94,32 @@ export async function runGenerationPipeline(submissionId: string): Promise<void>
     const result = await generateReport(intake, scores, kb);
     const generationTimeMs = Date.now() - startTime;
 
-    // ── 4. Persist report ────────────────────────────────────────────────────
+    // ── 4. Log API usage ─────────────────────────────────────────────────────
+    const totalTokens = result.inputTokens + result.outputTokens;
+    console.log(
+      `[pipeline] API usage — model=${result.modelUsed} requestId=${result.requestId}` +
+      ` input=${result.inputTokens} output=${result.outputTokens} total=${totalTokens}` +
+      ` cost=$${result.estimatedCostUsd.toFixed(6)} timeMs=${generationTimeMs}`,
+    );
+
+    // Write to Google Sheet (non-fatal)
+    appendUsageRow({
+      timestamp: new Date().toISOString(),
+      submissionId,
+      firmName: submission.lead.firmName,
+      workEmail: submission.lead.workEmail,
+      modelUsed: result.modelUsed,
+      requestId: result.requestId,
+      inputTokens: result.inputTokens,
+      outputTokens: result.outputTokens,
+      totalTokens,
+      estimatedCostUsd: result.estimatedCostUsd,
+      generationTimeMs,
+      clearTrustScore: Math.round(scores.headline),
+      scoreBand: scores.band,
+    }).catch(err => console.error('[pipeline] Google Sheets log failed:', err));
+
+    // ── 5. Persist report ────────────────────────────────────────────────────
     await prisma.generatedReport.create({
       data: {
         submissionId,
