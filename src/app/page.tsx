@@ -400,14 +400,14 @@ export default function Home() {
                 fontFamily: 'var(--font-playfair)',
                 color: R_CREAM,
                 fontWeight: 700,
-                fontSize: 'clamp(1.85rem, 4.5vw, 3.2rem)',
-                lineHeight: 1.2,
+                fontSize: 'clamp(0.95rem, 3.8vw, 3.0rem)',
+                lineHeight: 1.1,
                 textAlign: 'center',
                 marginTop: 24,
               }}
             >
-              <span style={{ display: 'block' }}>What AI is your firm actually using —</span>
-              <span style={{ display: 'block' }}>and can you evidence control of it?</span>
+              <span style={{ display: 'block', whiteSpace: 'nowrap' }}>What AI is your firm actually using</span>
+              <span style={{ display: 'block', whiteSpace: 'nowrap' }}>and can you evidence control of it?</span>
             </h1>
 
             {/* Gold ornamental divider */}
@@ -496,14 +496,12 @@ export default function Home() {
               </button>
             </div>
 
-            {/* Steps */}
+            {/* Steps — white cards */}
             <div
-              className="hero-anim grid grid-cols-3 gap-4 w-full"
+              className="hero-anim grid grid-cols-3 gap-3 w-full"
               style={{
                 animation: 'heroFadeIn 0.7s ease-out 0.68s forwards',
                 opacity: 0,
-                borderTop: `1px solid ${R_BORDER}`,
-                paddingTop: 24,
                 marginTop: 36,
                 maxWidth: '28rem',
               }}
@@ -513,18 +511,30 @@ export default function Home() {
                 { num: '02', label: '10 quick questions' },
                 { num: '03', label: 'Personalised PDF report' },
               ].map(item => (
-                <div key={item.num} className="flex flex-col items-center gap-2">
+                <div
+                  key={item.num}
+                  className="flex flex-col items-center"
+                  style={{
+                    backgroundColor: 'rgba(255,255,255,0.95)',
+                    borderTop: `3px solid ${GOLD}`,
+                    borderRadius: 4,
+                    padding: '16px 10px',
+                    gap: 8,
+                    boxShadow: '0 4px 20px rgba(0,0,0,0.22)',
+                  }}
+                >
                   <span
                     style={{
                       fontSize: '1.5rem',
                       fontWeight: 700,
-                      color: GOLD,
+                      color: NAVY,
                       fontFamily: 'var(--font-playfair)',
+                      lineHeight: 1,
                     }}
                   >
                     {item.num}
                   </span>
-                  <span style={{ fontSize: '0.7rem', textAlign: 'center', lineHeight: 1.4, color: R_MUTED }}>
+                  <span style={{ fontSize: '0.68rem', textAlign: 'center', lineHeight: 1.4, color: BODY, fontWeight: 500 }}>
                     {item.label}
                   </span>
                 </div>
