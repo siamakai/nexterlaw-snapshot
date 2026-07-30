@@ -1028,6 +1028,38 @@ export default function Home() {
             from { opacity: 0; transform: translateY(16px); }
             to   { opacity: 1; transform: translateY(0); }
           }
+          @keyframes tileFloat {
+            0%, 100% { transform: translateY(0px)  scale(1.000); }
+            50%       { transform: translateY(-5px) scale(1.035); }
+          }
+          /* Mobile staggered float (transform only, no opacity) */
+          .tf-0  { animation: tileFloat 3.0s ease-in-out 0.00s infinite; }
+          .tf-1  { animation: tileFloat 3.0s ease-in-out 0.30s infinite; }
+          .tf-2  { animation: tileFloat 3.0s ease-in-out 0.60s infinite; }
+          .tf-3  { animation: tileFloat 3.0s ease-in-out 0.90s infinite; }
+          .tf-4  { animation: tileFloat 3.0s ease-in-out 1.20s infinite; }
+          .tf-5  { animation: tileFloat 3.0s ease-in-out 0.15s infinite; }
+          .tf-6  { animation: tileFloat 3.0s ease-in-out 0.45s infinite; }
+          .tf-7  { animation: tileFloat 3.0s ease-in-out 0.75s infinite; }
+          .tf-8  { animation: tileFloat 3.0s ease-in-out 1.05s infinite; }
+          .tf-9  { animation: tileFloat 3.0s ease-in-out 1.35s infinite; }
+          /* Desktop: enter fade-up then continuous float */
+          .df-0  { opacity:0; animation: fadeInUp 0.45s ease forwards 0.00s, tileFloat 3.0s ease-in-out 0.50s infinite; }
+          .df-1  { opacity:0; animation: fadeInUp 0.45s ease forwards 0.22s, tileFloat 3.0s ease-in-out 0.72s infinite; }
+          .df-2  { opacity:0; animation: fadeInUp 0.45s ease forwards 0.44s, tileFloat 3.0s ease-in-out 0.94s infinite; }
+          .df-3  { opacity:0; animation: fadeInUp 0.45s ease forwards 0.66s, tileFloat 3.0s ease-in-out 1.16s infinite; }
+          .df-4  { opacity:0; animation: fadeInUp 0.45s ease forwards 0.88s, tileFloat 3.0s ease-in-out 1.38s infinite; }
+          .df-5  { opacity:0; animation: fadeInUp 0.45s ease forwards 1.10s, tileFloat 3.0s ease-in-out 0.15s infinite; }
+          .df-6  { opacity:0; animation: fadeInUp 0.45s ease forwards 1.32s, tileFloat 3.0s ease-in-out 0.45s infinite; }
+          .df-7  { opacity:0; animation: fadeInUp 0.45s ease forwards 1.54s, tileFloat 3.0s ease-in-out 0.75s infinite; }
+          .df-8  { opacity:0; animation: fadeInUp 0.45s ease forwards 1.76s, tileFloat 3.0s ease-in-out 1.05s infinite; }
+          .df-9  { opacity:0; animation: fadeInUp 0.45s ease forwards 1.98s, tileFloat 3.0s ease-in-out 1.35s infinite; }
+          @media (prefers-reduced-motion: reduce) {
+            .df-0,.df-1,.df-2,.df-3,.df-4,.df-5,.df-6,.df-7,.df-8,.df-9
+              { animation: none !important; opacity: 1 !important; }
+            .tf-0,.tf-1,.tf-2,.tf-3,.tf-4,.tf-5,.tf-6,.tf-7,.tf-8,.tf-9
+              { animation: none !important; }
+          }
         `}} />
         <div style={{ position: 'fixed', inset: 0, zIndex: 0, overflow: 'hidden', pointerEvents: 'none' }}>
           <img src="/hero.webp" alt="" aria-hidden="true" style={{ width: '100%', height: '100%', objectFit: 'cover', objectPosition: 'center 30%', opacity: 0.07 }} />
@@ -1067,22 +1099,29 @@ export default function Home() {
               <div style={{ width: 60, height: 1, backgroundColor: GOLD, margin: '0 auto' }} />
             </div>
 
-            {/* CLEAR / TRUST two-column grid */}
-            <div className="grid grid-cols-2 gap-x-16 mb-10">
+            {/* Mobile: 5×2 icon grid — labels hidden */}
+            <div className="grid sm:hidden grid-cols-5 gap-2 mb-10">
+              {clearTrust.map((dim, i) => (
+                <div
+                  key={i}
+                  className={`tf-${i}`}
+                  style={{ aspectRatio: '1', backgroundColor: GOLD, borderRadius: 6, display: 'flex', alignItems: 'center', justifyContent: 'center' }}
+                >
+                  <span style={{ color: R_BG, fontFamily: 'var(--font-playfair)', fontWeight: 700, fontSize: 28, lineHeight: 1 }}>
+                    {dim.letter}
+                  </span>
+                </div>
+              ))}
+            </div>
+
+            {/* Desktop: 2-column with labels — hidden on mobile */}
+            <div className="hidden sm:grid grid-cols-2 gap-x-16 mb-10">
               {/* Left column: C L E A R */}
               <div style={{ display: 'flex', flexDirection: 'column', gap: 24 }}>
                 {clearTrust.slice(0, 5).map((dim, i) => (
-                  <div
-                    key={i}
-                    className="flex items-center"
-                    style={{ gap: 16, opacity: 0, animation: 'fadeInUp 0.45s ease forwards', animationDelay: `${i * 0.22}s` }}
-                  >
-                    <div
-                      style={{ width: 70, height: 70, backgroundColor: GOLD, borderRadius: 6, display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0 }}
-                    >
-                      <span style={{ color: R_BG, fontFamily: 'var(--font-playfair)', fontWeight: 700, fontSize: 38, lineHeight: 1 }}>
-                        {dim.letter}
-                      </span>
+                  <div key={i} className={`df-${i} flex items-center`} style={{ gap: 16 }}>
+                    <div style={{ width: 70, height: 70, backgroundColor: GOLD, borderRadius: 6, display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0 }}>
+                      <span style={{ color: R_BG, fontFamily: 'var(--font-playfair)', fontWeight: 700, fontSize: 38, lineHeight: 1 }}>{dim.letter}</span>
                     </div>
                     <span style={{ color: GOLD, fontSize: 20, lineHeight: 1, flexShrink: 0 }}>—</span>
                     <span style={{ color: R_CREAM, fontSize: 17, fontWeight: 400 }}>{dim.word}</span>
@@ -1092,17 +1131,9 @@ export default function Home() {
               {/* Right column: T R U S T */}
               <div style={{ display: 'flex', flexDirection: 'column', gap: 24 }}>
                 {clearTrust.slice(5).map((dim, i) => (
-                  <div
-                    key={i}
-                    className="flex items-center"
-                    style={{ gap: 16, opacity: 0, animation: 'fadeInUp 0.45s ease forwards', animationDelay: `${(i + 5) * 0.22}s` }}
-                  >
-                    <div
-                      style={{ width: 70, height: 70, backgroundColor: GOLD, borderRadius: 6, display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0 }}
-                    >
-                      <span style={{ color: R_BG, fontFamily: 'var(--font-playfair)', fontWeight: 700, fontSize: 38, lineHeight: 1 }}>
-                        {dim.letter}
-                      </span>
+                  <div key={i} className={`df-${i + 5} flex items-center`} style={{ gap: 16 }}>
+                    <div style={{ width: 70, height: 70, backgroundColor: GOLD, borderRadius: 6, display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0 }}>
+                      <span style={{ color: R_BG, fontFamily: 'var(--font-playfair)', fontWeight: 700, fontSize: 38, lineHeight: 1 }}>{dim.letter}</span>
                     </div>
                     <span style={{ color: GOLD, fontSize: 20, lineHeight: 1, flexShrink: 0 }}>—</span>
                     <span style={{ color: R_CREAM, fontSize: 17, fontWeight: 400 }}>{dim.word}</span>
