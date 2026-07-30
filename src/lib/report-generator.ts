@@ -171,6 +171,36 @@ ${kbSections}
 Output the JSON report now. JSON only — no markdown fences, no preamble.`;
 }
 
+// Replace literal newline/CR characters inside JSON string values.
+// LLMs frequently emit multi-paragraph text with real \n characters
+// inside JSON strings, which is a syntax error in strict JSON.
+function escapeLiteralNewlinesInStrings(text: string): string {
+  let result = '';
+  let inString = false;
+  let escaped = false;
+  for (let i = 0; i < text.length; i++) {
+    const ch = text[i];
+    if (escaped) {
+      result += ch;
+      escaped = false;
+    } else if (ch === '\\' && inString) {
+      result += ch;
+      escaped = true;
+    } else if (ch === '"') {
+      result += ch;
+      inString = !inString;
+    } else if (inString && ch === '\r') {
+      // absorb bare CR; the \n that may follow will be handled next iteration
+      if (text[i + 1] !== '\n') result += '\\n';
+    } else if (inString && ch === '\n') {
+      result += '\\n';
+    } else {
+      result += ch;
+    }
+  }
+  return result;
+}
+
 function parseReportJson(raw: string): GeneratedReportContent | null {
   let cleaned = raw.trim();
 
@@ -184,8 +214,11 @@ function parseReportJson(raw: string): GeneratedReportContent | null {
   const end = cleaned.lastIndexOf('}');
   if (start === -1 || end === -1 || end <= start) return null;
 
+  // Sanitise literal newlines inside string values before parsing
+  const sanitised = escapeLiteralNewlinesInStrings(cleaned.slice(start, end + 1));
+
   try {
-    const obj = JSON.parse(cleaned.slice(start, end + 1)) as Partial<GeneratedReportContent>;
+    const obj = JSON.parse(sanitised) as Partial<GeneratedReportContent>;
 
     if (
       !obj.cover ||
