@@ -302,30 +302,44 @@ export default function Home() {
 
   if (step === 'landing') {
     return (
-      <div className="min-h-screen flex flex-col" style={{ backgroundColor: PAGE_BG }}>
+      <div className="min-h-screen flex flex-col" style={{ backgroundColor: R_BG }}>
+
+        {/* Header */}
         <header className="px-6 py-5 flex justify-between items-center max-w-6xl mx-auto w-full">
-          <NLLogo />
-          <span className="text-xs hidden sm:block uppercase tracking-widest" style={{ color: MUTED }}>
+          <NLLogo dark />
+          <span
+            className="text-xs hidden sm:block uppercase tracking-widest"
+            style={{ color: R_MUTED }}
+          >
             Free · UK Law Firms · No Sales Call
           </span>
         </header>
-        <div className="w-full h-px" style={{ backgroundColor: CARD_BORDER }} />
-        <div className="h-0.5 w-full" style={{ background: `linear-gradient(90deg, ${NAVY} 0%, ${GOLD} 50%, ${NAVY} 100%)` }} />
+        <div style={{ height: 1, backgroundColor: 'rgba(184,144,42,0.15)' }} />
+        <div style={{ height: 2, background: `linear-gradient(90deg, ${NAVY} 0%, ${GOLD} 50%, ${NAVY} 100%)` }} />
 
-        <main className="flex-1 flex flex-col items-center justify-center px-6 py-20 text-center max-w-3xl mx-auto w-full gap-8">
+        {/* Hero */}
+        <main className="flex-1 flex flex-col items-center justify-center px-5 py-12 sm:py-16 text-center max-w-3xl mx-auto w-full gap-7">
+
+          {/* Eyebrow pill */}
           <div
-            className="inline-flex items-center gap-2 px-5 py-2 text-xs font-semibold uppercase tracking-widest"
-            style={{ backgroundColor: `${NAVY}0d`, color: NAVY, border: `1px solid ${NAVY}25`, borderRadius: 2 }}
+            className="inline-flex items-center gap-2 px-4 py-2 text-xs font-semibold uppercase tracking-widest"
+            style={{
+              backgroundColor: 'rgba(184,144,42,0.12)',
+              color: GOLD,
+              border: '1px solid rgba(184,144,42,0.3)',
+              borderRadius: 2,
+            }}
           >
             AI Readiness Snapshot · Free · 3 minutes
           </div>
 
+          {/* Heading */}
           <h1
             style={{
               fontFamily: 'var(--font-playfair)',
-              color: NAVY,
+              color: R_CREAM,
               fontWeight: 700,
-              fontSize: 'clamp(2rem, 5vw, 3.25rem)',
+              fontSize: 'clamp(1.85rem, 5vw, 3.25rem)',
               lineHeight: 1.2,
               maxWidth: 680,
             }}
@@ -333,31 +347,37 @@ export default function Home() {
             What AI is your firm actually using — and can you evidence control of it?
           </h1>
 
+          {/* Gold ornamental divider */}
           <div className="flex items-center gap-4 w-full max-w-xs mx-auto">
-            <div className="flex-1 h-px" style={{ backgroundColor: CARD_BORDER }} />
+            <div className="flex-1 h-px" style={{ backgroundColor: 'rgba(184,144,42,0.2)' }} />
             <div className="w-8 h-0.5" style={{ backgroundColor: GOLD }} />
-            <div className="flex-1 h-px" style={{ backgroundColor: CARD_BORDER }} />
+            <div className="flex-1 h-px" style={{ backgroundColor: 'rgba(184,144,42,0.2)' }} />
           </div>
 
-          <p className="text-lg max-w-xl leading-relaxed" style={{ color: MUTED }}>
+          {/* Sub-heading */}
+          <p className="text-base max-w-xl leading-relaxed" style={{ color: R_BODY }}>
             Get your free AI Readiness Snapshot. We score your firm across our CLEAR TRUST framework — ten dimensions of AI control — and show you where the regulatory exposure lies.
           </p>
 
+          {/* Framework info card */}
           <div
             className="text-left text-sm w-full max-w-xl p-6"
             style={{
-              backgroundColor: '#fff',
-              border: `1px solid ${CARD_BORDER}`,
+              backgroundColor: R_CARD,
+              border: `1px solid ${R_BORDER}`,
               borderLeft: `3px solid ${GOLD}`,
               borderRadius: 2,
             }}
           >
-            <p className="text-xs font-semibold uppercase tracking-widest mb-2" style={{ color: GOLD }}>
+            <p
+              className="text-xs font-semibold uppercase tracking-widest mb-3"
+              style={{ color: GOLD }}
+            >
               About the CLEAR TRUST Framework
             </p>
-            <p className="leading-relaxed" style={{ color: MUTED }}>
+            <p className="leading-relaxed" style={{ color: R_BODY }}>
               This assessment is structured around the{' '}
-              <strong style={{ color: NAVY }}>CLEAR TRUST Framework</strong> — NexterLaw&apos;s
+              <strong style={{ color: R_CREAM }}>CLEAR TRUST Framework</strong> — NexterLaw&apos;s
               proprietary methodology for evaluating AI governance maturity in legal practice.
               Your firm is assessed across ten defined dimensions: Compliance, Literacy,
               Explainability, Accountability, Rights, Transparency, Reliability, Usage Governance,
@@ -366,18 +386,20 @@ export default function Home() {
             </p>
           </div>
 
+          {/* Primary CTA */}
           <button
             onClick={() => setStep('intake')}
-            className="inline-flex items-center gap-3 px-10 py-4 text-base font-semibold text-white transition-opacity hover:opacity-90"
-            style={{ backgroundColor: NAVY, borderRadius: 2 }}
+            className="inline-flex items-center gap-3 px-10 py-4 text-base font-semibold transition-opacity hover:opacity-90"
+            style={{ backgroundColor: GOLD, color: '#0d1f3c', borderRadius: 2 }}
           >
             Get Your Free Snapshot
-            <span style={{ color: GOLD }}>→</span>
+            <span>→</span>
           </button>
 
+          {/* Steps */}
           <div
-            className="grid grid-cols-3 gap-6 w-full max-w-lg pt-8 mt-2"
-            style={{ borderTop: `1px solid ${CARD_BORDER}` }}
+            className="grid grid-cols-3 gap-4 w-full max-w-lg pt-7"
+            style={{ borderTop: `1px solid ${R_BORDER}` }}
           >
             {[
               { num: '01', label: '5 firm details' },
@@ -385,22 +407,35 @@ export default function Home() {
               { num: '03', label: 'Personalised PDF report' },
             ].map(item => (
               <div key={item.num} className="flex flex-col items-center gap-2">
-                <span className="text-2xl font-bold" style={{ color: GOLD, fontFamily: 'var(--font-playfair)' }}>
+                <span
+                  className="text-2xl font-bold"
+                  style={{ color: GOLD, fontFamily: 'var(--font-playfair)' }}
+                >
                   {item.num}
                 </span>
-                <span className="text-sm" style={{ color: MUTED }}>{item.label}</span>
+                <span
+                  className="text-xs text-center leading-snug"
+                  style={{ color: R_MUTED }}
+                >
+                  {item.label}
+                </span>
               </div>
             ))}
           </div>
+
         </main>
 
+        {/* Footer */}
         <footer
           className="px-6 py-5 text-center text-xs max-w-3xl mx-auto w-full"
-          style={{ borderTop: `1px solid ${CARD_BORDER}`, color: MUTED }}
+          style={{ borderTop: `1px solid ${R_BORDER}`, color: R_MUTED }}
         >
           This Snapshot is general information, not legal or regulatory advice. © NexterLaw ·{' '}
-          <a href="https://nexterlaw.com" className="underline" style={{ color: NAVY }}>nexterlaw.com</a>
+          <a href="https://nexterlaw.com" className="underline" style={{ color: GOLD }}>
+            nexterlaw.com
+          </a>
         </footer>
+
       </div>
     );
   }
