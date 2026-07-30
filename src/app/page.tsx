@@ -302,25 +302,35 @@ export default function Home() {
 
   if (step === 'landing') {
     return (
-      <div className="min-h-screen flex flex-col" style={{ backgroundColor: R_BG }}>
+      <div style={{ minHeight: '100vh', display: 'flex', flexDirection: 'column', backgroundColor: R_BG }}>
 
-        {/* Header */}
-        <header className="px-6 py-5 flex justify-between items-center max-w-6xl mx-auto w-full">
-          <NLLogo dark />
-          <span
-            className="text-xs hidden sm:block uppercase tracking-widest"
-            style={{ color: R_MUTED }}
-          >
-            Free · UK Law Firms · No Sales Call
-          </span>
-        </header>
-        <div style={{ height: 1, backgroundColor: 'rgba(184,144,42,0.15)' }} />
-        <div style={{ height: 2, background: `linear-gradient(90deg, ${NAVY} 0%, ${GOLD} 50%, ${NAVY} 100%)` }} />
+        {/* ── Full-bleed hero section ── */}
+        <section style={{ position: 'relative', minHeight: '92vh', display: 'flex', flexDirection: 'column', overflow: 'hidden' }}>
 
-        {/* Hero */}
-        <main className="flex-1 flex flex-col lg:flex-row items-center justify-center px-5 py-10 sm:py-14 max-w-6xl mx-auto w-full gap-10 lg:gap-14">
+          {/* Background image — slow zoom on load */}
+          <img
+            src="/hero.webp"
+            alt=""
+            aria-hidden="true"
+            className="hero-bg"
+            style={{
+              position: 'absolute',
+              inset: 0,
+              width: '100%',
+              height: '100%',
+              objectFit: 'cover',
+              objectPosition: 'center 30%',
+              zIndex: 0,
+            }}
+          />
 
-          {/* Entrance animation keyframes */}
+          {/* Dark overlay ~45% */}
+          <div style={{ position: 'absolute', inset: 0, background: 'rgba(6,12,26,0.46)', zIndex: 1 }} />
+
+          {/* Bottom-fade gradient to R_BG */}
+          <div style={{ position: 'absolute', bottom: 0, left: 0, right: 0, height: 220, background: 'linear-gradient(to bottom, transparent, rgba(13,31,60,0.97))', zIndex: 2 }} />
+
+          {/* Animation keyframes */}
           <style dangerouslySetInnerHTML={{ __html: `
             @keyframes heroFadeUp {
               from { opacity: 0; transform: translateY(22px); }
@@ -330,20 +340,35 @@ export default function Home() {
               from { opacity: 0; }
               to   { opacity: 1; }
             }
-            @keyframes heroScale {
-              from { opacity: 0; transform: scale(0.975); }
-              to   { opacity: 1; transform: scale(1); }
+            @keyframes heroBgZoom {
+              from { transform: scale(1.07); }
+              to   { transform: scale(1); }
             }
+            .hero-bg { animation: heroBgZoom 7s ease-out forwards; }
             @media (prefers-reduced-motion: reduce) {
-              .hero-anim {
-                animation-duration: 0.01ms !important;
-                animation-delay: 0.01ms !important;
-              }
+              .hero-anim { animation-duration: 0.01ms !important; animation-delay: 0.01ms !important; }
+              .hero-bg   { animation: none !important; }
             }
           `}} />
 
-          {/* ── Left: text content ─────────────────────────────── */}
-          <div className="flex flex-col items-center lg:items-start text-center lg:text-left gap-6 w-full lg:flex-1">
+          {/* Header */}
+          <header
+            style={{ position: 'relative', zIndex: 10 }}
+            className="px-6 py-5 flex justify-between items-center max-w-6xl mx-auto w-full"
+          >
+            <NLLogo dark />
+            <span className="text-xs hidden sm:block uppercase tracking-widest" style={{ color: R_MUTED }}>
+              Free · UK Law Firms · No Sales Call
+            </span>
+          </header>
+          <div style={{ position: 'relative', zIndex: 10, height: 1, backgroundColor: 'rgba(184,144,42,0.15)' }} />
+          <div style={{ position: 'relative', zIndex: 10, height: 2, background: `linear-gradient(90deg, ${NAVY} 0%, ${GOLD} 50%, ${NAVY} 100%)` }} />
+
+          {/* Hero content — centred over the image */}
+          <main
+            style={{ position: 'relative', zIndex: 10, flex: 1 }}
+            className="flex flex-col items-center justify-center px-5 py-16 sm:py-20 mx-auto w-full max-w-3xl"
+          >
 
             {/* Eyebrow pill */}
             <div
@@ -374,6 +399,8 @@ export default function Home() {
                 fontWeight: 700,
                 fontSize: 'clamp(1.85rem, 4.5vw, 3.2rem)',
                 lineHeight: 1.2,
+                textAlign: 'center',
+                marginTop: 24,
               }}
             >
               <span style={{ display: 'block' }}>What AI is your firm actually using —</span>
@@ -382,12 +409,18 @@ export default function Home() {
 
             {/* Gold ornamental divider */}
             <div
-              className="hero-anim flex items-center gap-4 w-full max-w-xs"
-              style={{ animation: 'heroFadeIn 0.7s ease-out 0.26s forwards', opacity: 0 }}
+              className="hero-anim flex items-center gap-4"
+              style={{
+                animation: 'heroFadeIn 0.7s ease-out 0.26s forwards',
+                opacity: 0,
+                width: '100%',
+                maxWidth: '16rem',
+                marginTop: 24,
+              }}
             >
-              <div className="flex-1 h-px" style={{ backgroundColor: 'rgba(184,144,42,0.2)' }} />
-              <div className="w-8 h-0.5" style={{ backgroundColor: GOLD }} />
-              <div className="flex-1 h-px" style={{ backgroundColor: 'rgba(184,144,42,0.2)' }} />
+              <div style={{ flex: 1, height: 1, backgroundColor: 'rgba(184,144,42,0.25)' }} />
+              <div style={{ width: 32, height: 2, backgroundColor: GOLD }} />
+              <div style={{ flex: 1, height: 1, backgroundColor: 'rgba(184,144,42,0.25)' }} />
             </div>
 
             {/* Sub-heading */}
@@ -399,7 +432,9 @@ export default function Home() {
                 fontSize: '1rem',
                 lineHeight: 1.75,
                 color: R_BODY,
-                maxWidth: '32rem',
+                maxWidth: '30rem',
+                textAlign: 'center',
+                marginTop: 20,
               }}
             >
               Get your free AI Readiness Snapshot. We score your firm across our CLEAR TRUST framework — ten dimensions of AI control — and show you where the regulatory exposure lies.
@@ -408,15 +443,16 @@ export default function Home() {
             {/* Framework info card */}
             <div
               className="hero-anim w-full text-left"
-              style={{ animation: 'heroFadeUp 0.8s ease-out 0.46s forwards', opacity: 0 }}
+              style={{ animation: 'heroFadeUp 0.8s ease-out 0.44s forwards', opacity: 0, marginTop: 28 }}
             >
               <div
                 style={{
-                  backgroundColor: R_CARD,
+                  backgroundColor: 'rgba(19,38,68,0.80)',
                   border: `1px solid ${R_BORDER}`,
                   borderLeft: `3px solid ${GOLD}`,
                   borderRadius: 2,
-                  padding: '20px 24px',
+                  padding: '18px 22px',
+                  backdropFilter: 'blur(6px)',
                 }}
               >
                 <p
@@ -437,8 +473,7 @@ export default function Home() {
                   proprietary methodology for evaluating AI governance maturity in legal practice.
                   Your firm is assessed across ten defined dimensions: Compliance, Literacy,
                   Explainability, Accountability, Rights, Transparency, Reliability, Usage Governance,
-                  Security, and Traceability. The report, scores, findings, and recommendations are all
-                  based on the framework&apos;s criteria and evaluation methodology.
+                  Security, and Traceability.
                 </p>
               </div>
             </div>
@@ -446,7 +481,7 @@ export default function Home() {
             {/* Primary CTA */}
             <div
               className="hero-anim"
-              style={{ animation: 'heroFadeUp 0.7s ease-out 0.58s forwards', opacity: 0 }}
+              style={{ animation: 'heroFadeUp 0.7s ease-out 0.56s forwards', opacity: 0, marginTop: 32 }}
             >
               <button
                 onClick={() => setStep('intake')}
@@ -460,11 +495,14 @@ export default function Home() {
 
             {/* Steps */}
             <div
-              className="hero-anim grid grid-cols-3 gap-4 w-full pt-6"
+              className="hero-anim grid grid-cols-3 gap-4 w-full"
               style={{
                 animation: 'heroFadeIn 0.7s ease-out 0.68s forwards',
                 opacity: 0,
                 borderTop: `1px solid ${R_BORDER}`,
+                paddingTop: 24,
+                marginTop: 36,
+                maxWidth: '28rem',
               }}
             >
               {[
@@ -490,30 +528,9 @@ export default function Home() {
               ))}
             </div>
 
-          </div>
+          </main>
 
-          {/* ── Right: hero image ──────────────────────────────── */}
-          <div
-            className="hero-anim w-full flex-shrink-0 lg:w-[44%]"
-            style={{ animation: 'heroScale 1.0s ease-out 0.18s forwards', opacity: 0 }}
-          >
-            <img
-              src="/hero.jpg"
-              alt="AI governance assessment interface"
-              style={{
-                width: '100%',
-                height: 'auto',
-                maxHeight: 580,
-                objectFit: 'cover',
-                objectPosition: 'center top',
-                borderRadius: 12,
-                boxShadow: '0 20px 60px rgba(0,0,0,0.55), 0 0 0 1px rgba(184,144,42,0.12)',
-                display: 'block',
-              }}
-            />
-          </div>
-
-        </main>
+        </section>
 
         {/* Footer */}
         <footer
