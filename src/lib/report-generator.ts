@@ -207,7 +207,6 @@ export async function generateReport(
       const stream = client.messages.stream({
         model: MODEL,
         max_tokens: 16000,
-        thinking: { type: 'adaptive' },
         system: systemPrompt,
         messages: [{ role: 'user', content: userPrompt }],
       });

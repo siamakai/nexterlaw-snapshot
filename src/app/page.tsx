@@ -18,7 +18,6 @@ import type {
   ClearTrustScores,
   GeneratedReportContent,
 } from '@/types';
-import { Button, buttonVariants } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Checkbox } from '@/components/ui/checkbox';
@@ -53,11 +52,17 @@ const EMPTY_ANSWERS: SelfAssessmentAnswers = {
   traceability: '',
 };
 
-// ─── Helper components ────────────────────────────────────────────────────────
+// ─── Design tokens ────────────────────────────────────────────────────────────
 
 const NAVY = '#1a3a6b';
 const GOLD = '#B8902A';
 const STEEL = '#5b7fa6';
+const PAGE_BG = '#f9f7f4';
+const CARD_BORDER = '#e6dfd6';
+const BODY = '#3d3a35';
+const MUTED = '#7a746d';
+
+// ─── Helper components ────────────────────────────────────────────────────────
 
 function NLLogo({ size = 'md' }: { size?: 'sm' | 'md' | 'lg' }) {
   const scale = size === 'sm' ? 0.75 : size === 'lg' ? 1.4 : 1;
@@ -68,7 +73,6 @@ function NLLogo({ size = 'md' }: { size?: 'sm' | 'md' | 'lg' }) {
 
   return (
     <div className="flex items-center shrink-0" style={{ gap }}>
-      {/* NL monogram box */}
       <div
         className="flex items-center justify-center shrink-0"
         style={{
@@ -93,8 +97,6 @@ function NLLogo({ size = 'md' }: { size?: 'sm' | 'md' | 'lg' }) {
           NL
         </span>
       </div>
-
-      {/* Wordmark */}
       <div className="flex flex-col" style={{ gap: Math.round(3 * scale) }}>
         <div
           style={{
@@ -127,9 +129,18 @@ function NLLogo({ size = 'md' }: { size?: 'sm' | 'md' | 'lg' }) {
 
 function StepIndicator({ current, total }: { current: number; total: number }) {
   return (
-    <div className="flex items-center gap-2 text-sm text-gray-500">
-      <Progress value={(current / total) * 100} className="w-32 h-1.5" />
-      <span>Step {current} of {total}</span>
+    <div className="flex items-center gap-1.5">
+      {Array.from({ length: total }, (_, i) => (
+        <div
+          key={i}
+          className="rounded-full transition-all duration-300"
+          style={{
+            width: i + 1 === current ? 24 : 8,
+            height: 8,
+            backgroundColor: i + 1 <= current ? NAVY : CARD_BORDER,
+          }}
+        />
+      ))}
     </div>
   );
 }
@@ -138,8 +149,8 @@ function EmailWarning({ email }: { email: string }) {
   const domain = email.split('@')[1]?.toLowerCase() ?? '';
   if (!domain || !FREE_EMAIL_DOMAINS.includes(domain)) return null;
   return (
-    <p className="text-amber-600 text-sm mt-1">
-      We recommend using your work email address for accurate firm identification.
+    <p className="text-sm mt-1.5 flex items-center gap-1.5" style={{ color: '#b45309' }}>
+      <span>⚠</span> We recommend using your work email address for accurate firm identification.
     </p>
   );
 }
@@ -149,15 +160,22 @@ function EmailWarning({ email }: { email: string }) {
 function ScoreGauge({ score, band }: { score: number; band: string }) {
   const bandInfo = SCORE_BANDS.find(b => b.label === band) ?? SCORE_BANDS[1];
   return (
-    <div className="flex flex-col items-center gap-2">
+    <div className="flex flex-col items-center gap-3">
       <div
-        className="w-32 h-32 rounded-full flex flex-col items-center justify-center border-4"
-        style={{ borderColor: bandInfo.colour, backgroundColor: `${bandInfo.colour}15` }}
+        className="w-36 h-36 rounded-full flex flex-col items-center justify-center"
+        style={{ border: `3px solid ${bandInfo.colour}`, backgroundColor: `${bandInfo.colour}10` }}
       >
-        <span className="text-4xl font-bold" style={{ color: bandInfo.colour }}>{Math.round(score)}</span>
-        <span className="text-xs text-gray-500 mt-0.5">out of 100</span>
+        <span
+          style={{ color: bandInfo.colour, fontFamily: 'var(--font-playfair)', fontWeight: 700, fontSize: '3rem', lineHeight: 1 }}
+        >
+          {Math.round(score)}
+        </span>
+        <span className="text-xs mt-1" style={{ color: MUTED }}>out of 100</span>
       </div>
-      <Badge style={{ backgroundColor: bandInfo.colour, color: '#fff' }} className="text-sm px-3 py-1">
+      <Badge
+        style={{ backgroundColor: bandInfo.colour, color: '#fff', letterSpacing: '0.05em' }}
+        className="text-xs font-semibold uppercase px-4 py-1.5"
+      >
         {bandInfo.displayName}
       </Badge>
     </div>
@@ -166,22 +184,22 @@ function ScoreGauge({ score, band }: { score: number; band: string }) {
 
 function DimensionBar({ name, letter, score }: { name: string; letter: string; score: number }) {
   const pct = Math.round(score);
-  const color = pct >= 70 ? '#22c55e' : pct >= 40 ? '#f59e0b' : '#ef4444';
+  const color = pct >= 70 ? '#16a34a' : pct >= 40 ? '#d97706' : '#dc2626';
   return (
     <div className="flex items-center gap-3">
       <div
-        className="w-7 h-7 rounded flex items-center justify-center text-xs font-bold text-white shrink-0"
-        style={{ backgroundColor: color }}
+        className="w-7 h-7 flex items-center justify-center text-xs font-bold text-white shrink-0"
+        style={{ backgroundColor: NAVY, borderRadius: 2 }}
       >
         {letter}
       </div>
       <div className="flex-1 min-w-0">
-        <div className="flex justify-between text-sm mb-1">
-          <span className="font-medium text-gray-800 truncate">{name}</span>
+        <div className="flex justify-between text-sm mb-1.5">
+          <span className="font-medium truncate" style={{ color: BODY }}>{name}</span>
           <span className="font-bold ml-2 shrink-0" style={{ color }}>{pct}</span>
         </div>
-        <div className="w-full h-2 bg-gray-100 rounded-full overflow-hidden">
-          <div className="h-2 rounded-full transition-all" style={{ width: `${pct}%`, backgroundColor: color }} />
+        <div className="w-full h-1.5 rounded-full overflow-hidden" style={{ backgroundColor: CARD_BORDER }}>
+          <div className="h-1.5 rounded-full transition-all" style={{ width: `${pct}%`, backgroundColor: color }} />
         </div>
       </div>
     </div>
@@ -201,7 +219,6 @@ export default function Home() {
   const [submitError, setSubmitError] = useState<string | null>(null);
   const [pollProgress, setPollProgress] = useState(0);
 
-  // ── Intake validation ──────────────────────────────────────────────────────
   const validateIntake = useCallback((): boolean => {
     const errs: Partial<Record<keyof IntakeData, string>> = {};
     if (!intake.firmName.trim()) errs.firmName = 'Firm name is required.';
@@ -222,7 +239,6 @@ export default function Home() {
 
   const allAnswered = CLEAR_TRUST_DIMENSIONS.every(d => answers[d.key] !== '');
 
-  // ── Submit ─────────────────────────────────────────────────────────────────
   const handleSubmit = useCallback(async () => {
     if (!consent) return;
     setSubmitError(null);
@@ -238,22 +254,19 @@ export default function Home() {
 
       if (!res.ok) {
         const body = await res.json().catch(() => ({}));
-        throw new Error(body.error ?? 'Submission failed. Please try again.');
+        throw new Error((body as { error?: string }).error ?? 'Submission failed. Please try again.');
       }
 
       const data: { submissionId: string } = await res.json();
       setSubmissionId(data.submissionId);
 
-      // Poll for completion
       let progress = 20;
       const poll = async () => {
         try {
           const r = await fetch(`/api/report/${data.submissionId}`);
           const status: ReportStatusResponse = await r.json();
-
           progress = Math.min(progress + 15, 90);
           setPollProgress(progress);
-
           if (status.status === 'COMPLETE') {
             setPollProgress(100);
             setReportData(status);
@@ -276,166 +289,210 @@ export default function Home() {
     }
   }, [intake, answers, consent]);
 
-  // ─────────────────────────────────────────────────────────────────────────
-  // RENDER
-  // ─────────────────────────────────────────────────────────────────────────
+  // ─── Landing ───────────────────────────────────────────────────────────────
 
   if (step === 'landing') {
     return (
-      <div className="min-h-screen bg-white flex flex-col">
-        <header className="px-6 py-5 border-b border-gray-100 flex justify-between items-center max-w-6xl mx-auto w-full">
+      <div className="min-h-screen flex flex-col" style={{ backgroundColor: PAGE_BG }}>
+        <header className="px-6 py-5 flex justify-between items-center max-w-6xl mx-auto w-full">
           <NLLogo />
-          <span className="text-xs text-gray-400 hidden sm:block tracking-wide uppercase">Free · UK Law Firms · No Sales Call</span>
+          <span className="text-xs hidden sm:block uppercase tracking-widest" style={{ color: MUTED }}>
+            Free · UK Law Firms · No Sales Call
+          </span>
         </header>
+        <div className="w-full h-px" style={{ backgroundColor: CARD_BORDER }} />
+        <div className="h-0.5 w-full" style={{ background: `linear-gradient(90deg, ${NAVY} 0%, ${GOLD} 50%, ${NAVY} 100%)` }} />
 
-        {/* Gold accent bar */}
-        <div className="h-0.5 w-full" style={{ background: 'linear-gradient(90deg, #1a3a6b 0%, #B8902A 50%, #1a3a6b 100%)' }} />
-
-        <main className="flex-1 flex flex-col items-center justify-center px-6 py-16 text-center max-w-3xl mx-auto w-full gap-8">
+        <main className="flex-1 flex flex-col items-center justify-center px-6 py-20 text-center max-w-3xl mx-auto w-full gap-8">
           <div
-            className="inline-flex items-center gap-2 px-4 py-1.5 rounded-full text-xs font-semibold uppercase tracking-widest"
-            style={{ backgroundColor: '#1a3a6b10', color: '#1a3a6b', border: '1px solid #1a3a6b30' }}
+            className="inline-flex items-center gap-2 px-5 py-2 text-xs font-semibold uppercase tracking-widest"
+            style={{ backgroundColor: `${NAVY}0d`, color: NAVY, border: `1px solid ${NAVY}25`, borderRadius: 2 }}
           >
             AI Readiness Snapshot · Free · 3 minutes
           </div>
 
           <h1
-            className="text-4xl sm:text-5xl leading-tight"
-            style={{ fontFamily: 'var(--font-playfair)', color: '#1a3a6b', fontWeight: 700 }}
+            style={{
+              fontFamily: 'var(--font-playfair)',
+              color: NAVY,
+              fontWeight: 700,
+              fontSize: 'clamp(2rem, 5vw, 3.25rem)',
+              lineHeight: 1.2,
+              maxWidth: 680,
+            }}
           >
             What AI is your firm actually using — and can you evidence control of it?
           </h1>
 
-          <div className="w-16 h-0.5 mx-auto" style={{ backgroundColor: '#B8902A' }} />
+          <div className="flex items-center gap-4 w-full max-w-xs mx-auto">
+            <div className="flex-1 h-px" style={{ backgroundColor: CARD_BORDER }} />
+            <div className="w-8 h-0.5" style={{ backgroundColor: GOLD }} />
+            <div className="flex-1 h-px" style={{ backgroundColor: CARD_BORDER }} />
+          </div>
 
-          <p className="text-lg text-gray-600 max-w-xl leading-relaxed">
+          <p className="text-lg max-w-xl leading-relaxed" style={{ color: MUTED }}>
             Get your free AI Readiness Snapshot. We score your firm across our CLEAR TRUST framework — ten dimensions of AI control — and show you where the regulatory exposure lies.
           </p>
 
           <div
-            className="text-left text-sm rounded-xl p-5 max-w-xl w-full"
-            style={{ backgroundColor: '#1a3a6b08', border: '1px solid #1a3a6b20' }}
+            className="text-left text-sm w-full max-w-xl p-6"
+            style={{
+              backgroundColor: '#fff',
+              border: `1px solid ${CARD_BORDER}`,
+              borderLeft: `3px solid ${GOLD}`,
+              borderRadius: 2,
+            }}
           >
-            <p className="text-xs font-semibold uppercase tracking-widest mb-2" style={{ color: '#B8902A' }}>
+            <p className="text-xs font-semibold uppercase tracking-widest mb-2" style={{ color: GOLD }}>
               About the CLEAR TRUST Framework
             </p>
-            <p className="text-gray-600 leading-relaxed">
-              This assessment is structured around the <strong style={{ color: '#1a3a6b' }}>CLEAR TRUST Framework</strong> — NexterLaw&apos;s proprietary methodology for evaluating AI governance maturity in legal practice. Your firm is assessed across ten defined dimensions: Compliance, Literacy, Explainability, Accountability, Rights, Transparency, Reliability, Usage Governance, Security, and Traceability. The report, scores, findings, and recommendations are all based on the framework&apos;s criteria and evaluation methodology.
+            <p className="leading-relaxed" style={{ color: MUTED }}>
+              This assessment is structured around the{' '}
+              <strong style={{ color: NAVY }}>CLEAR TRUST Framework</strong> — NexterLaw&apos;s
+              proprietary methodology for evaluating AI governance maturity in legal practice.
+              Your firm is assessed across ten defined dimensions: Compliance, Literacy,
+              Explainability, Accountability, Rights, Transparency, Reliability, Usage Governance,
+              Security, and Traceability. The report, scores, findings, and recommendations are all
+              based on the framework&apos;s criteria and evaluation methodology.
             </p>
           </div>
 
-          <div className="flex flex-col sm:flex-row gap-3 w-full sm:w-auto justify-center">
-            <Button
-              size="lg"
-              className="text-white px-10 py-6 text-base font-semibold"
-              style={{ backgroundColor: '#1a3a6b' }}
-              onClick={() => setStep('intake')}
-            >
-              Get Your Free Snapshot →
-            </Button>
-          </div>
+          <button
+            onClick={() => setStep('intake')}
+            className="inline-flex items-center gap-3 px-10 py-4 text-base font-semibold text-white transition-opacity hover:opacity-90"
+            style={{ backgroundColor: NAVY, borderRadius: 2 }}
+          >
+            Get Your Free Snapshot
+            <span style={{ color: GOLD }}>→</span>
+          </button>
 
-          <div className="grid grid-cols-3 gap-6 mt-2 max-w-lg w-full border-t border-gray-100 pt-8">
+          <div
+            className="grid grid-cols-3 gap-6 w-full max-w-lg pt-8 mt-2"
+            style={{ borderTop: `1px solid ${CARD_BORDER}` }}
+          >
             {[
               { num: '01', label: '5 firm details' },
               { num: '02', label: '10 quick questions' },
               { num: '03', label: 'Personalised PDF report' },
             ].map(item => (
               <div key={item.num} className="flex flex-col items-center gap-2">
-                <span className="text-xl font-bold" style={{ color: '#B8902A', fontFamily: 'var(--font-playfair)' }}>{item.num}</span>
-                <span className="text-sm text-gray-500">{item.label}</span>
+                <span className="text-2xl font-bold" style={{ color: GOLD, fontFamily: 'var(--font-playfair)' }}>
+                  {item.num}
+                </span>
+                <span className="text-sm" style={{ color: MUTED }}>{item.label}</span>
               </div>
             ))}
           </div>
         </main>
 
-        <footer className="px-6 py-5 border-t border-gray-100 text-center text-xs text-gray-400 max-w-3xl mx-auto w-full">
+        <footer
+          className="px-6 py-5 text-center text-xs max-w-3xl mx-auto w-full"
+          style={{ borderTop: `1px solid ${CARD_BORDER}`, color: MUTED }}
+        >
           This Snapshot is general information, not legal or regulatory advice. © NexterLaw ·{' '}
-          <a href="https://nexterlaw.com" className="underline hover:text-gray-600">nexterlaw.com</a>
+          <a href="https://nexterlaw.com" className="underline" style={{ color: NAVY }}>nexterlaw.com</a>
         </footer>
       </div>
     );
   }
 
-  // ── Step: Intake form ──────────────────────────────────────────────────────
+  // ─── Intake ────────────────────────────────────────────────────────────────
+
   if (step === 'intake') {
     return (
-      <div className="min-h-screen bg-white flex flex-col">
-        <header className="px-6 py-4 border-b border-gray-100 flex justify-between items-center max-w-6xl mx-auto w-full">
+      <div className="min-h-screen flex flex-col" style={{ backgroundColor: PAGE_BG }}>
+        <header className="px-6 py-4 bg-white flex justify-between items-center max-w-6xl mx-auto w-full">
           <NLLogo />
           <StepIndicator current={1} total={3} />
         </header>
-        <div className="h-0.5 w-full" style={{ background: 'linear-gradient(90deg, #1a3a6b 0%, #B8902A 33%, #1a3a6b 100%)' }} />
+        <div className="w-full h-px" style={{ backgroundColor: CARD_BORDER }} />
+        <div className="h-0.5 w-full" style={{ background: `linear-gradient(90deg, ${NAVY} 0%, ${GOLD} 33%, ${NAVY} 100%)` }} />
 
         <main className="flex-1 px-6 py-10 max-w-2xl mx-auto w-full">
-          <h2 className="text-2xl font-bold text-gray-900 mb-1">Tell us about your firm</h2>
-          <p className="text-gray-500 mb-8">This information personalises your AI Readiness Snapshot.</p>
+          <p className="text-xs font-semibold uppercase tracking-widest mb-2" style={{ color: GOLD }}>Step 01 of 03</p>
+          <h2 className="mb-1" style={{ fontFamily: 'var(--font-playfair)', color: NAVY, fontWeight: 700, fontSize: '1.75rem', lineHeight: 1.25 }}>
+            Tell us about your firm
+          </h2>
+          <p className="mb-8" style={{ color: MUTED }}>This information personalises your AI Readiness Snapshot.</p>
 
-          <div className="space-y-6">
-            {/* Firm name */}
+          <div className="bg-white p-8 space-y-6" style={{ border: `1px solid ${CARD_BORDER}`, borderRadius: 2 }}>
+
             <div>
-              <Label htmlFor="firmName" className="text-sm font-medium text-gray-700">Firm name *</Label>
+              <Label htmlFor="firmName" className="text-sm font-semibold mb-1.5 block" style={{ color: BODY }}>
+                Firm name <span style={{ color: GOLD }}>*</span>
+              </Label>
               <Input
                 id="firmName"
                 value={intake.firmName}
                 onChange={e => setIntake(p => ({ ...p, firmName: e.target.value }))}
                 placeholder="e.g. Smith & Partners LLP"
-                className="mt-1"
+                style={{ borderColor: intakeErrors.firmName ? '#dc2626' : CARD_BORDER, borderRadius: 2 }}
               />
-              {intakeErrors.firmName && <p className="text-red-500 text-sm mt-1">{intakeErrors.firmName}</p>}
+              {intakeErrors.firmName && <p className="text-sm mt-1" style={{ color: '#dc2626' }}>{intakeErrors.firmName}</p>}
             </div>
 
-            {/* Website */}
             <div>
-              <Label htmlFor="firmWebsite" className="text-sm font-medium text-gray-700">Firm website *</Label>
+              <Label htmlFor="firmWebsite" className="text-sm font-semibold mb-1.5 block" style={{ color: BODY }}>
+                Firm website <span style={{ color: GOLD }}>*</span>
+              </Label>
               <Input
                 id="firmWebsite"
                 value={intake.firmWebsite}
                 onChange={e => setIntake(p => ({ ...p, firmWebsite: e.target.value }))}
                 placeholder="https://www.yourfirm.co.uk"
-                className="mt-1"
+                style={{ borderColor: intakeErrors.firmWebsite ? '#dc2626' : CARD_BORDER, borderRadius: 2 }}
               />
-              {intakeErrors.firmWebsite && <p className="text-red-500 text-sm mt-1">{intakeErrors.firmWebsite}</p>}
+              {intakeErrors.firmWebsite && <p className="text-sm mt-1" style={{ color: '#dc2626' }}>{intakeErrors.firmWebsite}</p>}
             </div>
 
-            {/* City */}
             <div className="grid grid-cols-2 gap-4">
               <div>
-                <Label htmlFor="city" className="text-sm font-medium text-gray-700">City *</Label>
+                <Label htmlFor="city" className="text-sm font-semibold mb-1.5 block" style={{ color: BODY }}>
+                  City <span style={{ color: GOLD }}>*</span>
+                </Label>
                 <Input
                   id="city"
                   value={intake.city}
                   onChange={e => setIntake(p => ({ ...p, city: e.target.value }))}
                   placeholder="London"
-                  className="mt-1"
+                  style={{ borderColor: intakeErrors.city ? '#dc2626' : CARD_BORDER, borderRadius: 2 }}
                 />
-                {intakeErrors.city && <p className="text-red-500 text-sm mt-1">{intakeErrors.city}</p>}
+                {intakeErrors.city && <p className="text-sm mt-1" style={{ color: '#dc2626' }}>{intakeErrors.city}</p>}
               </div>
               <div>
-                <Label htmlFor="country" className="text-sm font-medium text-gray-700">Country *</Label>
+                <Label htmlFor="country" className="text-sm font-semibold mb-1.5 block" style={{ color: BODY }}>
+                  Country <span style={{ color: GOLD }}>*</span>
+                </Label>
                 <Input
                   id="country"
                   value={intake.country}
                   onChange={e => setIntake(p => ({ ...p, country: e.target.value }))}
                   placeholder="e.g. United Kingdom"
-                  className="mt-1"
+                  style={{ borderColor: intakeErrors.country ? '#dc2626' : CARD_BORDER, borderRadius: 2 }}
                 />
-                {intakeErrors.country && <p className="text-red-500 text-sm mt-1">{intakeErrors.country}</p>}
+                {intakeErrors.country && <p className="text-sm mt-1" style={{ color: '#dc2626' }}>{intakeErrors.country}</p>}
               </div>
             </div>
 
-            {/* Practice types */}
+            <div className="h-px" style={{ backgroundColor: CARD_BORDER }} />
+
             <div>
-              <Label className="text-sm font-medium text-gray-700">Practice type(s) * <span className="font-normal text-gray-400">(select all that apply)</span></Label>
-              <div className="mt-2 grid grid-cols-1 sm:grid-cols-2 gap-2">
+              <Label className="text-sm font-semibold block mb-0.5" style={{ color: BODY }}>
+                Practice type(s) <span style={{ color: GOLD }}>*</span>{' '}
+                <span className="font-normal text-xs" style={{ color: MUTED }}>(select all that apply)</span>
+              </Label>
+              <div className="mt-3 grid grid-cols-1 sm:grid-cols-2 gap-2">
                 {PRACTICE_TYPES.map(pt => {
                   const checked = intake.practiceTypes.includes(pt.slug);
                   return (
                     <label
                       key={pt.slug}
-                      className={`flex items-center gap-3 px-3 py-2.5 rounded-lg border cursor-pointer transition-colors ${
-                        checked ? 'border-[#1a3a6b] bg-[#1a3a6b]/5' : 'border-gray-200 hover:border-gray-300'
-                      }`}
+                      className="flex items-center gap-3 px-3 py-2.5 cursor-pointer transition-colors"
+                      style={{
+                        border: `1px solid ${checked ? NAVY : CARD_BORDER}`,
+                        borderRadius: 2,
+                        backgroundColor: checked ? `${NAVY}0a` : '#fff',
+                      }}
                     >
                       <Checkbox
                         checked={checked}
@@ -449,189 +506,249 @@ export default function Home() {
                         }}
                         className="shrink-0"
                       />
-                      <span className="text-sm text-gray-800">{pt.label}</span>
+                      <span className="text-sm" style={{ color: checked ? NAVY : BODY }}>{pt.label}</span>
                     </label>
                   );
                 })}
               </div>
-              {intakeErrors.practiceTypes && <p className="text-red-500 text-sm mt-1">{intakeErrors.practiceTypes}</p>}
+              {intakeErrors.practiceTypes && <p className="text-sm mt-1" style={{ color: '#dc2626' }}>{intakeErrors.practiceTypes}</p>}
             </div>
 
-            {/* Firm size */}
             <div>
-              <Label className="text-sm font-medium text-gray-700">Firm size *</Label>
-              <div className="mt-2 grid grid-cols-2 sm:grid-cols-3 gap-2">
+              <Label className="text-sm font-semibold block mb-0.5" style={{ color: BODY }}>
+                Firm size <span style={{ color: GOLD }}>*</span>
+              </Label>
+              <div className="mt-3 grid grid-cols-2 sm:grid-cols-3 gap-2">
                 {FIRM_SIZE_OPTIONS.map(opt => (
                   <button
                     key={opt.value}
                     type="button"
                     onClick={() => setIntake(p => ({ ...p, firmSize: opt.value }))}
-                    className={`px-3 py-2.5 rounded-lg border text-sm font-medium transition-colors ${
-                      intake.firmSize === opt.value
-                        ? 'border-[#1a3a6b] bg-[#1a3a6b] text-white'
-                        : 'border-gray-200 text-gray-700 hover:border-gray-300'
-                    }`}
+                    className="px-3 py-2.5 text-sm font-medium transition-colors"
+                    style={{
+                      border: `1px solid ${intake.firmSize === opt.value ? NAVY : CARD_BORDER}`,
+                      borderRadius: 2,
+                      backgroundColor: intake.firmSize === opt.value ? NAVY : '#fff',
+                      color: intake.firmSize === opt.value ? '#fff' : BODY,
+                    }}
                   >
                     {opt.label}
                   </button>
                 ))}
               </div>
-              {intakeErrors.firmSize && <p className="text-red-500 text-sm mt-1">{intakeErrors.firmSize}</p>}
+              {intakeErrors.firmSize && <p className="text-sm mt-1" style={{ color: '#dc2626' }}>{intakeErrors.firmSize}</p>}
             </div>
 
-            {/* EU facing */}
             <div>
-              <Label className="text-sm font-medium text-gray-700">Do you act for EU-based clients or handle EU-market work? *</Label>
-              <div className="mt-2 flex gap-2">
+              <Label className="text-sm font-semibold block mb-0.5" style={{ color: BODY }}>
+                Do you act for EU-based clients or handle EU-market work? <span style={{ color: GOLD }}>*</span>
+              </Label>
+              <div className="mt-3 flex gap-2">
                 {EU_FACING_OPTIONS.map(opt => (
                   <button
                     key={opt.value}
                     type="button"
                     onClick={() => setIntake(p => ({ ...p, euFacing: opt.value }))}
-                    className={`flex-1 px-3 py-2.5 rounded-lg border text-sm font-medium transition-colors ${
-                      intake.euFacing === opt.value
-                        ? 'border-[#1a3a6b] bg-[#1a3a6b] text-white'
-                        : 'border-gray-200 text-gray-700 hover:border-gray-300'
-                    }`}
+                    className="flex-1 px-3 py-2.5 text-sm font-medium transition-colors"
+                    style={{
+                      border: `1px solid ${intake.euFacing === opt.value ? NAVY : CARD_BORDER}`,
+                      borderRadius: 2,
+                      backgroundColor: intake.euFacing === opt.value ? NAVY : '#fff',
+                      color: intake.euFacing === opt.value ? '#fff' : BODY,
+                    }}
                   >
                     {opt.label}
                   </button>
                 ))}
               </div>
-              {intakeErrors.euFacing && <p className="text-red-500 text-sm mt-1">{intakeErrors.euFacing}</p>}
+              {intakeErrors.euFacing && <p className="text-sm mt-1" style={{ color: '#dc2626' }}>{intakeErrors.euFacing}</p>}
             </div>
 
-            {/* Email */}
+            <div className="h-px" style={{ backgroundColor: CARD_BORDER }} />
+
             <div>
-              <Label htmlFor="workEmail" className="text-sm font-medium text-gray-700">Work email *</Label>
+              <Label htmlFor="workEmail" className="text-sm font-semibold mb-1.5 block" style={{ color: BODY }}>
+                Work email <span style={{ color: GOLD }}>*</span>
+              </Label>
               <Input
                 id="workEmail"
                 type="email"
                 value={intake.workEmail}
                 onChange={e => setIntake(p => ({ ...p, workEmail: e.target.value }))}
                 placeholder="you@yourfirm.co.uk"
-                className="mt-1"
+                style={{ borderColor: intakeErrors.workEmail ? '#dc2626' : CARD_BORDER, borderRadius: 2 }}
               />
               <EmailWarning email={intake.workEmail} />
-              {intakeErrors.workEmail && <p className="text-red-500 text-sm mt-1">{intakeErrors.workEmail}</p>}
+              {intakeErrors.workEmail && <p className="text-sm mt-1" style={{ color: '#dc2626' }}>{intakeErrors.workEmail}</p>}
             </div>
           </div>
 
-          <div className="mt-10 flex gap-3">
-            <Button variant="outline" onClick={() => setStep('landing')} className="flex-1">
+          <div className="mt-6 flex gap-3">
+            <button
+              onClick={() => setStep('landing')}
+              className="flex-1 px-6 py-3 text-sm font-medium"
+              style={{ border: `1px solid ${CARD_BORDER}`, borderRadius: 2, backgroundColor: '#fff', color: BODY }}
+            >
               ← Back
-            </Button>
-            <Button
-              className="flex-1 bg-[#1a3a6b] hover:bg-[#152f58] text-white"
-              onClick={() => {
-                if (validateIntake()) setStep('selfAssessment');
-              }}
+            </button>
+            <button
+              onClick={() => { if (validateIntake()) setStep('selfAssessment'); }}
+              className="flex-1 px-6 py-3 text-sm font-semibold text-white transition-opacity hover:opacity-90"
+              style={{ backgroundColor: NAVY, borderRadius: 2 }}
             >
               Continue →
-            </Button>
+            </button>
           </div>
         </main>
       </div>
     );
   }
 
-  // ── Step: Self-assessment ──────────────────────────────────────────────────
+  // ─── Self-assessment ───────────────────────────────────────────────────────
+
   if (step === 'selfAssessment') {
     return (
-      <div className="min-h-screen bg-white flex flex-col">
-        <header className="px-6 py-4 border-b border-gray-100 flex justify-between items-center max-w-6xl mx-auto w-full">
+      <div className="min-h-screen flex flex-col" style={{ backgroundColor: PAGE_BG }}>
+        <header className="px-6 py-4 bg-white flex justify-between items-center max-w-6xl mx-auto w-full">
           <NLLogo />
           <StepIndicator current={2} total={3} />
         </header>
-        <div className="h-0.5 w-full" style={{ background: 'linear-gradient(90deg, #1a3a6b 0%, #B8902A 66%, #1a3a6b 100%)' }} />
+        <div className="w-full h-px" style={{ backgroundColor: CARD_BORDER }} />
+        <div className="h-0.5 w-full" style={{ background: `linear-gradient(90deg, ${NAVY} 0%, ${GOLD} 66%, ${NAVY} 100%)` }} />
 
         <main className="flex-1 px-6 py-10 max-w-2xl mx-auto w-full">
-          <h2 className="text-2xl font-bold text-gray-900 mb-1">Ten quick questions</h2>
-          <p className="text-gray-500 mb-2">
-            These answers drive your personalised CLEAR TRUST score.
-          </p>
-          <div className="mb-8 p-3 bg-blue-50 rounded-lg border border-blue-100">
-            <p className="text-sm text-blue-800">
-              💡 Most firms answer <strong>No</strong> or <strong>Not sure</strong> to several of these — that is exactly why the Snapshot exists.
+          <p className="text-xs font-semibold uppercase tracking-widest mb-2" style={{ color: GOLD }}>Step 02 of 03</p>
+          <h2 className="mb-1" style={{ fontFamily: 'var(--font-playfair)', color: NAVY, fontWeight: 700, fontSize: '1.75rem', lineHeight: 1.25 }}>
+            Ten quick questions
+          </h2>
+          <p className="mb-6" style={{ color: MUTED }}>These answers drive your personalised CLEAR TRUST score.</p>
+
+          <div
+            className="flex items-start gap-3 px-4 py-3 mb-8 text-sm"
+            style={{ backgroundColor: `${NAVY}0a`, border: `1px solid ${NAVY}20`, borderRadius: 2, color: NAVY }}
+          >
+            <span className="shrink-0 mt-0.5" style={{ color: GOLD }}>◆</span>
+            <p>
+              Most firms answer <strong>No</strong> or <strong>Not sure</strong> to several of these — that is exactly why the Snapshot exists.
             </p>
           </div>
 
-          <div className="space-y-5">
+          <div className="space-y-3">
             {CLEAR_TRUST_DIMENSIONS.map((dim, i) => {
               const answer = answers[dim.key];
+              const leftBorder = answer
+                ? answer === 'YES' ? '#16a34a' : answer === 'NO' ? '#dc2626' : '#d97706'
+                : NAVY;
               return (
-                <div key={dim.key} className="p-4 rounded-xl border border-gray-200 bg-gray-50/50">
-                  <div className="flex items-start gap-3 mb-3">
-                    <div className="w-7 h-7 rounded bg-[#1a3a6b] flex items-center justify-center text-white text-xs font-bold shrink-0 mt-0.5">
-                      {dim.letter}
+                <div
+                  key={dim.key}
+                  className="bg-white p-5"
+                  style={{ border: `1px solid ${CARD_BORDER}`, borderLeft: `3px solid ${leftBorder}`, borderRadius: 2 }}
+                >
+                  <div className="flex items-start gap-3 mb-4">
+                    <div
+                      className="flex items-center justify-center shrink-0 mt-0.5"
+                      style={{ width: 28, height: 28, backgroundColor: NAVY, borderRadius: 2 }}
+                    >
+                      <span style={{ color: '#fff', fontFamily: 'var(--font-playfair)', fontWeight: 700, fontSize: 14, lineHeight: 1 }}>
+                        {dim.letter}
+                      </span>
                     </div>
                     <div>
-                      <p className="text-xs font-semibold text-[#1a3a6b] uppercase tracking-wide">{dim.name} · Q{i + 1}</p>
-                      <p className="text-sm text-gray-800 mt-0.5">{dim.question}</p>
+                      <p className="text-xs font-semibold uppercase tracking-wide" style={{ color: GOLD }}>
+                        {dim.name} · Q{i + 1}
+                      </p>
+                      <p className="text-sm mt-0.5" style={{ color: BODY }}>{dim.question}</p>
                     </div>
                   </div>
                   <div className="flex gap-2 pl-10">
-                    {SELF_ASSESSMENT_ANSWERS.map(opt => (
-                      <button
-                        key={opt.value}
-                        type="button"
-                        onClick={() => setAnswers(p => ({ ...p, [dim.key]: opt.value as SelfAssessmentAnswer }))}
-                        className={`flex-1 py-2 rounded-lg text-sm font-medium border transition-colors ${
-                          answer === opt.value
-                            ? opt.value === 'YES'
-                              ? 'border-green-500 bg-green-50 text-green-800'
-                              : opt.value === 'NO'
-                              ? 'border-red-400 bg-red-50 text-red-800'
-                              : 'border-amber-400 bg-amber-50 text-amber-800'
-                            : 'border-gray-200 text-gray-600 hover:border-gray-300 bg-white'
-                        }`}
-                      >
-                        {opt.label}
-                      </button>
-                    ))}
+                    {SELF_ASSESSMENT_ANSWERS.map(opt => {
+                      const sel = answer === opt.value;
+                      const selStyle =
+                        opt.value === 'YES'
+                          ? { borderColor: '#16a34a', bg: '#f0fdf4', color: '#15803d' }
+                          : opt.value === 'NO'
+                          ? { borderColor: '#dc2626', bg: '#fef2f2', color: '#b91c1c' }
+                          : { borderColor: '#d97706', bg: '#fffbeb', color: '#b45309' };
+                      return (
+                        <button
+                          key={opt.value}
+                          type="button"
+                          onClick={() => setAnswers(p => ({ ...p, [dim.key]: opt.value as SelfAssessmentAnswer }))}
+                          className="flex-1 py-2 text-sm font-medium transition-colors"
+                          style={{
+                            border: `1px solid ${sel ? selStyle.borderColor : CARD_BORDER}`,
+                            borderRadius: 2,
+                            backgroundColor: sel ? selStyle.bg : '#fff',
+                            color: sel ? selStyle.color : MUTED,
+                          }}
+                        >
+                          {opt.label}
+                        </button>
+                      );
+                    })}
                   </div>
                 </div>
               );
             })}
           </div>
 
-          <div className="mt-10 flex gap-3">
-            <Button variant="outline" onClick={() => setStep('intake')} className="flex-1">
+          <div className="mt-8 flex gap-3">
+            <button
+              onClick={() => setStep('intake')}
+              className="flex-1 px-6 py-3 text-sm font-medium"
+              style={{ border: `1px solid ${CARD_BORDER}`, borderRadius: 2, backgroundColor: '#fff', color: BODY }}
+            >
               ← Back
-            </Button>
-            <Button
-              className="flex-1 bg-[#1a3a6b] hover:bg-[#152f58] text-white disabled:opacity-50"
-              disabled={!allAnswered}
-              onClick={() => setStep('consent')}
+            </button>
+            <button
+              onClick={() => { if (allAnswered) setStep('consent'); }}
+              className="flex-1 px-6 py-3 text-sm font-semibold text-white"
+              style={{
+                backgroundColor: allAnswered ? NAVY : `${NAVY}60`,
+                borderRadius: 2,
+                cursor: allAnswered ? 'pointer' : 'not-allowed',
+              }}
             >
               Continue →
-            </Button>
+            </button>
           </div>
           {!allAnswered && (
-            <p className="text-center text-sm text-gray-400 mt-3">Please answer all questions to continue.</p>
+            <p className="text-center text-sm mt-3" style={{ color: MUTED }}>Please answer all questions to continue.</p>
           )}
         </main>
       </div>
     );
   }
 
-  // ── Step: Consent ──────────────────────────────────────────────────────────
+  // ─── Consent ───────────────────────────────────────────────────────────────
+
   if (step === 'consent') {
     return (
-      <div className="min-h-screen bg-white flex flex-col">
-        <header className="px-6 py-4 border-b border-gray-100 flex justify-between items-center max-w-6xl mx-auto w-full">
+      <div className="min-h-screen flex flex-col" style={{ backgroundColor: PAGE_BG }}>
+        <header className="px-6 py-4 bg-white flex justify-between items-center max-w-6xl mx-auto w-full">
           <NLLogo />
           <StepIndicator current={3} total={3} />
         </header>
-        <div className="h-0.5 w-full" style={{ background: 'linear-gradient(90deg, #B8902A 0%, #1a3a6b 100%)' }} />
+        <div className="w-full h-px" style={{ backgroundColor: CARD_BORDER }} />
+        <div className="h-0.5 w-full" style={{ background: `linear-gradient(90deg, ${GOLD} 0%, ${NAVY} 100%)` }} />
 
         <main className="flex-1 px-6 py-10 max-w-2xl mx-auto w-full flex flex-col justify-center">
-          <div className="bg-gray-50 rounded-2xl border border-gray-200 p-8">
-            <h2 className="text-2xl font-bold text-gray-900 mb-2">Almost there</h2>
-            <p className="text-gray-600 mb-6">Your personalised Snapshot is ready to generate. Please read and confirm the following before we proceed.</p>
+          <p className="text-xs font-semibold uppercase tracking-widest mb-2" style={{ color: GOLD }}>Step 03 of 03</p>
 
-            <div className="bg-white rounded-xl border border-gray-200 p-4 text-sm text-gray-700 leading-relaxed mb-6">
-              <p className="font-semibold text-gray-900 mb-2">Important Notice</p>
+          <div className="bg-white p-8" style={{ border: `1px solid ${CARD_BORDER}`, borderRadius: 2 }}>
+            <h2 className="mb-2" style={{ fontFamily: 'var(--font-playfair)', color: NAVY, fontWeight: 700, fontSize: '1.75rem', lineHeight: 1.25 }}>
+              Almost there
+            </h2>
+            <p className="mb-6" style={{ color: MUTED }}>
+              Your personalised Snapshot is ready to generate. Please read and confirm the following before we proceed.
+            </p>
+
+            <div
+              className="p-5 text-sm leading-relaxed mb-6"
+              style={{ backgroundColor: PAGE_BG, border: `1px solid ${CARD_BORDER}`, borderRadius: 2, color: BODY }}
+            >
+              <p className="font-semibold mb-2" style={{ color: NAVY }}>Important Notice</p>
               <p>
                 This AI Readiness Snapshot is provided as <strong>general information only</strong>. It does not constitute legal, regulatory, or professional advice, and no adviser–client relationship is created by using this tool. The Snapshot is not a substitute for professional advice tailored to your firm&apos;s specific circumstances.
               </p>
@@ -644,29 +761,41 @@ export default function Home() {
                 onCheckedChange={v => setConsent(v === true)}
                 className="mt-0.5 shrink-0"
               />
-              <span className="text-sm text-gray-700">
+              <span className="text-sm" style={{ color: BODY }}>
                 I understand this Snapshot is general information, not legal or regulatory advice, and I consent to NexterLaw contacting me about the results.{' '}
-                <a href="#" className="text-[#1a3a6b] underline">Privacy notice</a>.
+                <a href="#" className="underline" style={{ color: NAVY }}>Privacy notice</a>.
               </span>
             </label>
 
             {submitError && (
-              <div className="mt-4 p-3 bg-red-50 border border-red-200 rounded-lg text-sm text-red-700">
+              <div
+                className="mt-4 p-4 text-sm"
+                style={{ backgroundColor: '#fef2f2', border: '1px solid #fecaca', borderRadius: 2, color: '#b91c1c' }}
+              >
                 {submitError}
               </div>
             )}
 
             <div className="mt-8 flex gap-3">
-              <Button variant="outline" onClick={() => setStep('selfAssessment')} className="flex-1">
+              <button
+                onClick={() => setStep('selfAssessment')}
+                className="flex-1 px-6 py-3 text-sm font-medium"
+                style={{ border: `1px solid ${CARD_BORDER}`, borderRadius: 2, backgroundColor: '#fff', color: BODY }}
+              >
                 ← Back
-              </Button>
-              <Button
-                className="flex-1 bg-[#1a3a6b] hover:bg-[#152f58] text-white disabled:opacity-50"
-                disabled={!consent}
+              </button>
+              <button
                 onClick={handleSubmit}
+                disabled={!consent}
+                className="flex-1 px-6 py-3 text-sm font-semibold text-white"
+                style={{
+                  backgroundColor: consent ? NAVY : `${NAVY}60`,
+                  borderRadius: 2,
+                  cursor: consent ? 'pointer' : 'not-allowed',
+                }}
               >
                 Generate My Snapshot →
-              </Button>
+              </button>
             </div>
           </div>
         </main>
@@ -674,7 +803,8 @@ export default function Home() {
     );
   }
 
-  // ── Step: Processing ───────────────────────────────────────────────────────
+  // ─── Processing ────────────────────────────────────────────────────────────
+
   if (step === 'processing') {
     const stages = [
       { pct: 20, label: 'Saving your details…' },
@@ -701,195 +831,195 @@ export default function Home() {
 
     return (
       <div className="min-h-screen bg-white flex flex-col">
-        {/* Header */}
-        <div className="px-6 py-5 border-b border-gray-100 flex justify-center">
+        <div className="px-6 py-5 flex justify-center" style={{ borderBottom: `1px solid ${CARD_BORDER}` }}>
           <NLLogo />
         </div>
-        <div className="h-0.5 w-full" style={{ background: 'linear-gradient(90deg, #1a3a6b 0%, #B8902A 50%, #1a3a6b 100%)' }} />
+        <div className="h-0.5 w-full" style={{ background: `linear-gradient(90deg, ${NAVY} 0%, ${GOLD} 50%, ${NAVY} 100%)` }} />
 
         <div className="flex-1 flex flex-col items-center justify-center px-6 py-12">
-          <div className="w-full max-w-lg">
+          <div className="w-full max-w-2xl">
 
-            {/* Spinner + headline */}
-            <div className="flex items-center gap-4 mb-8">
+            <div className="flex items-center gap-4 mb-12">
               <div
-                className="w-10 h-10 rounded-full flex items-center justify-center shrink-0"
-                style={{ backgroundColor: '#B8902A18' }}
+                className="w-10 h-10 flex items-center justify-center shrink-0"
+                style={{ backgroundColor: `${GOLD}18`, borderRadius: 2 }}
               >
                 <div
                   className="w-5 h-5 rounded-full border-2 border-t-transparent animate-spin"
-                  style={{ borderColor: '#B8902A', borderTopColor: 'transparent' }}
+                  style={{ borderColor: GOLD, borderTopColor: 'transparent' }}
                 />
               </div>
               <div>
-                <p
-                  className="font-bold text-lg leading-tight"
-                  style={{ color: '#1a3a6b', fontFamily: 'var(--font-playfair)' }}
-                >
+                <p className="font-bold text-lg leading-tight" style={{ color: NAVY, fontFamily: 'var(--font-playfair)' }}>
                   Building your AI Readiness Snapshot
                 </p>
-                <p className="text-sm text-gray-400 mt-0.5">{stage.label}</p>
+                <p className="text-sm mt-0.5" style={{ color: MUTED }}>{stage.label}</p>
               </div>
             </div>
 
-            {/* Divider — CLEAR (stacked) | line | TRUST (stacked) */}
-            <div className="flex items-center justify-center gap-8 mb-3">
-              <div className="flex flex-col items-center" style={{ gap: 6 }}>
-                {['C','L','E','A','R'].map(letter => (
-                  <span key={letter} className="font-bold" style={{ color: '#B8902A', fontSize: 13, letterSpacing: '0.12em', lineHeight: 1 }}>
-                    {letter}
-                  </span>
-                ))}
-              </div>
-              <div className="self-stretch w-px bg-gray-200" />
-              <div className="flex flex-col items-center" style={{ gap: 6 }}>
-                {['T','R','U','S','T'].map((letter, i) => (
-                  <span key={i} className="font-bold" style={{ color: '#B8902A', fontSize: 13, letterSpacing: '0.12em', lineHeight: 1 }}>
-                    {letter}
-                  </span>
-                ))}
-              </div>
+            {/* FRAMEWORK heading + gold rule */}
+            <div className="text-center mb-10">
+              <p style={{ color: GOLD, fontSize: 11, letterSpacing: '0.35em', textTransform: 'uppercase', fontWeight: 500, marginBottom: 10 }}>
+                Framework
+              </p>
+              <div style={{ width: 60, height: 1, backgroundColor: GOLD, margin: '0 auto' }} />
             </div>
-            <p className="text-[9px] uppercase tracking-[0.35em] text-center text-gray-400 mb-8">Framework</p>
 
-            {/* CLEAR TRUST letter grid — 2 columns */}
-            <div className="grid grid-cols-2 gap-x-8 gap-y-3 mb-8">
-              {clearTrust.map((dim, i) => (
-                <div
-                  key={i}
-                  className="flex items-center gap-3"
-                  style={{
-                    opacity: 0,
-                    animation: 'fadeInUp 0.45s ease forwards',
-                    animationDelay: `${i * 0.28}s`,
-                  }}
-                >
-                  {/* Letter badge */}
+            {/* CLEAR / TRUST two-column grid */}
+            <div className="grid grid-cols-2 gap-x-16 mb-10">
+              {/* Left column: C L E A R */}
+              <div style={{ display: 'flex', flexDirection: 'column', gap: 24 }}>
+                {clearTrust.slice(0, 5).map((dim, i) => (
                   <div
-                    className="w-9 h-9 rounded flex items-center justify-center shrink-0"
-                    style={{ backgroundColor: '#1a3a6b' }}
+                    key={i}
+                    className="flex items-center"
+                    style={{ gap: 16, opacity: 0, animation: 'fadeInUp 0.45s ease forwards', animationDelay: `${i * 0.22}s` }}
                   >
-                    <span
-                      style={{
-                        color: '#fff',
-                        fontFamily: 'var(--font-playfair)',
-                        fontWeight: 700,
-                        fontSize: 16,
-                        lineHeight: 1,
-                      }}
+                    <div
+                      style={{ width: 70, height: 70, backgroundColor: NAVY, borderRadius: 6, display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0 }}
                     >
-                      {dim.letter}
-                    </span>
+                      <span style={{ color: GOLD, fontFamily: 'var(--font-playfair)', fontWeight: 700, fontSize: 38, lineHeight: 1 }}>
+                        {dim.letter}
+                      </span>
+                    </div>
+                    <span style={{ color: GOLD, fontSize: 20, lineHeight: 1, flexShrink: 0 }}>—</span>
+                    <span style={{ color: NAVY, fontSize: 17, fontWeight: 400 }}>{dim.word}</span>
                   </div>
-                  {/* = word */}
-                  <div className="flex items-baseline gap-1.5 min-w-0">
-                    <span className="text-sm font-bold shrink-0" style={{ color: '#B8902A' }}>=</span>
-                    <span className="text-sm text-gray-700 truncate">{dim.word}</span>
+                ))}
+              </div>
+              {/* Right column: T R U S T */}
+              <div style={{ display: 'flex', flexDirection: 'column', gap: 24 }}>
+                {clearTrust.slice(5).map((dim, i) => (
+                  <div
+                    key={i}
+                    className="flex items-center"
+                    style={{ gap: 16, opacity: 0, animation: 'fadeInUp 0.45s ease forwards', animationDelay: `${(i + 5) * 0.22}s` }}
+                  >
+                    <div
+                      style={{ width: 70, height: 70, backgroundColor: NAVY, borderRadius: 6, display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0 }}
+                    >
+                      <span style={{ color: GOLD, fontFamily: 'var(--font-playfair)', fontWeight: 700, fontSize: 38, lineHeight: 1 }}>
+                        {dim.letter}
+                      </span>
+                    </div>
+                    <span style={{ color: GOLD, fontSize: 20, lineHeight: 1, flexShrink: 0 }}>—</span>
+                    <span style={{ color: NAVY, fontSize: 17, fontWeight: 400 }}>{dim.word}</span>
                   </div>
-                </div>
-              ))}
+                ))}
+              </div>
             </div>
 
-            {/* Framework explanation */}
-            <p className="text-xs text-gray-500 text-center mb-6 leading-relaxed">
-              Your report is being generated using the <span className="font-semibold" style={{ color: '#1a3a6b' }}>CLEAR TRUST Framework</span> — NexterLaw&apos;s proprietary methodology for assessing AI governance maturity. Your responses are evaluated against the framework&apos;s ten dimensions and criteria to produce your personalised findings.
+            <p className="text-xs text-center mb-6 leading-relaxed" style={{ color: MUTED }}>
+              Your report is being generated using the{' '}
+              <span className="font-semibold" style={{ color: NAVY }}>CLEAR TRUST Framework</span>{' '}
+              — NexterLaw&apos;s proprietary methodology for assessing AI governance maturity. Your responses are evaluated against the framework&apos;s ten dimensions and criteria to produce your personalised findings.
             </p>
 
-            {/* Progress */}
-            <Progress value={pollProgress} className="h-1" />
-            <p className="text-xs text-gray-400 mt-2 text-center">This takes around 30–60 seconds</p>
+            <Progress value={pollProgress} className="h-0.5" />
+            <p className="text-xs mt-2 text-center" style={{ color: MUTED }}>This takes around 30–60 seconds</p>
           </div>
         </div>
       </div>
     );
   }
 
-  // ── Step: Result ───────────────────────────────────────────────────────────
+  // ─── Result ────────────────────────────────────────────────────────────────
+
   if (step === 'result' && reportData) {
     const scores = reportData.scores as ClearTrustScores;
     const report = reportData.report as GeneratedReportContent;
 
     return (
-      <div className="min-h-screen bg-slate-50">
-        <header className="px-6 py-4 bg-white border-b border-gray-100 flex justify-between items-center">
+      <div className="min-h-screen" style={{ backgroundColor: PAGE_BG }}>
+        <header className="px-6 py-4 bg-white flex justify-between items-center" style={{ borderBottom: `1px solid ${CARD_BORDER}` }}>
           <NLLogo />
           <div className="flex gap-2">
             {reportData.pdfUrl && (
               <a
                 href={reportData.pdfUrl}
                 download
-                className={buttonVariants({ size: 'sm' })}
-                style={{ backgroundColor: '#B8902A', color: '#fff' }}
+                className="inline-flex items-center gap-2 px-5 py-2.5 text-sm font-semibold text-white transition-opacity hover:opacity-90"
+                style={{ backgroundColor: GOLD, borderRadius: 2 }}
               >
-                Download PDF
+                ↓ Download PDF
               </a>
             )}
           </div>
         </header>
-        <div className="h-0.5 w-full" style={{ background: 'linear-gradient(90deg, #1a3a6b 0%, #B8902A 50%, #1a3a6b 100%)' }} />
+        <div className="h-0.5 w-full" style={{ background: `linear-gradient(90deg, ${NAVY} 0%, ${GOLD} 50%, ${NAVY} 100%)` }} />
 
-        <main className="max-w-4xl mx-auto px-6 py-10 space-y-6">
+        <main className="max-w-4xl mx-auto px-6 py-10 space-y-5">
 
-          {/* Framework introduction */}
-          <section className="bg-white rounded-2xl border border-gray-100 shadow-sm p-8">
-            <p className="text-xs font-semibold uppercase tracking-widest mb-2" style={{ color: '#B8902A' }}>About This Report</p>
-            <h2 className="text-lg font-bold text-gray-900 mb-3" style={{ fontFamily: 'var(--font-playfair)' }}>Generated Using the CLEAR TRUST Framework</h2>
-            <p className="text-sm text-gray-700 leading-relaxed">
+          {/* Framework intro */}
+          <section
+            className="bg-white p-8"
+            style={{ border: `1px solid ${CARD_BORDER}`, borderLeft: `3px solid ${GOLD}`, borderRadius: 2 }}
+          >
+            <p className="text-xs font-semibold uppercase tracking-widest mb-2" style={{ color: GOLD }}>About This Report</p>
+            <h2 className="mb-3" style={{ fontFamily: 'var(--font-playfair)', color: NAVY, fontWeight: 700, fontSize: '1.25rem' }}>
+              Generated Using the CLEAR TRUST Framework
+            </h2>
+            <p className="text-sm leading-relaxed" style={{ color: BODY }}>
               This report has been generated using the <strong>CLEAR TRUST Framework</strong> — NexterLaw&apos;s proprietary methodology for evaluating AI governance maturity in legal practice. Your organisation has been assessed against ten dimensions: Compliance, Literacy, Explainability, Accountability, Rights, Transparency, Reliability, Usage Governance, Security, and Traceability. All scores, findings, and recommendations presented here are derived directly from the framework&apos;s evaluation criteria and reflect your firm&apos;s responses to the self-assessment questionnaire.
             </p>
           </section>
 
           {/* Score */}
-          <section className="bg-white rounded-2xl border border-gray-100 shadow-sm p-8">
-            <p className="text-xs font-semibold uppercase tracking-widest mb-4" style={{ color: '#B8902A' }}>
+          <section className="bg-white p-8" style={{ border: `1px solid ${CARD_BORDER}`, borderRadius: 2 }}>
+            <p className="text-xs font-semibold uppercase tracking-widest mb-4" style={{ color: GOLD }}>
               CLEAR TRUST Score · {intake.firmName}
             </p>
             <div className="flex flex-col sm:flex-row items-center gap-8">
               <ScoreGauge score={scores.headline} band={scores.band} />
-              <div className="flex-1 w-full space-y-3">
+              <div className="flex-1 w-full space-y-4">
                 {scores.dimensions.map(d => (
                   <DimensionBar key={d.key} name={d.name} letter={d.letter} score={d.score} />
                 ))}
               </div>
             </div>
             {report?.scoreNarrative && (
-              <p className="mt-6 text-sm text-gray-700 leading-relaxed border-t border-gray-100 pt-4">{report.scoreNarrative}</p>
+              <p className="mt-6 text-sm leading-relaxed pt-5" style={{ borderTop: `1px solid ${CARD_BORDER}`, color: BODY }}>
+                {report.scoreNarrative}
+              </p>
             )}
           </section>
 
           {/* Regulatory map */}
           {report?.regulatoryMap && (
-            <section className="bg-white rounded-2xl border border-gray-100 shadow-sm p-8">
-              <h2 className="text-lg font-bold text-gray-900 mb-4" style={{ fontFamily: 'var(--font-playfair)' }}>Your Regulatory Pressure Map</h2>
-              <div className="space-y-4">
+            <section className="bg-white p-8" style={{ border: `1px solid ${CARD_BORDER}`, borderRadius: 2 }}>
+              <p className="text-xs font-semibold uppercase tracking-widest mb-1" style={{ color: GOLD }}>Regulatory Framework</p>
+              <h2 className="mb-5" style={{ fontFamily: 'var(--font-playfair)', color: NAVY, fontWeight: 700, fontSize: '1.25rem' }}>
+                Your Regulatory Pressure Map
+              </h2>
+              <div className="space-y-3">
                 {report.regulatoryMap.sra && (
-                  <div className="p-4 bg-blue-50 rounded-xl">
-                    <p className="text-xs font-semibold text-blue-700 uppercase tracking-wide mb-1">SRA Expectations</p>
-                    <p className="text-sm text-gray-800">{report.regulatoryMap.sra}</p>
+                  <div className="p-4" style={{ backgroundColor: `${NAVY}08`, border: `1px solid ${NAVY}20`, borderLeft: `3px solid ${NAVY}`, borderRadius: 2 }}>
+                    <p className="text-xs font-semibold uppercase tracking-wide mb-1.5" style={{ color: NAVY }}>SRA Expectations</p>
+                    <p className="text-sm" style={{ color: BODY }}>{report.regulatoryMap.sra}</p>
                   </div>
                 )}
                 {report.regulatoryMap.ukGdpr && (
-                  <div className="p-4 bg-purple-50 rounded-xl">
-                    <p className="text-xs font-semibold text-purple-700 uppercase tracking-wide mb-1">UK GDPR / ICO</p>
-                    <p className="text-sm text-gray-800">{report.regulatoryMap.ukGdpr}</p>
+                  <div className="p-4" style={{ backgroundColor: `${STEEL}0d`, border: `1px solid ${STEEL}25`, borderLeft: `3px solid ${STEEL}`, borderRadius: 2 }}>
+                    <p className="text-xs font-semibold uppercase tracking-wide mb-1.5" style={{ color: STEEL }}>UK GDPR / ICO</p>
+                    <p className="text-sm" style={{ color: BODY }}>{report.regulatoryMap.ukGdpr}</p>
                   </div>
                 )}
                 {report.regulatoryMap.pii && (
-                  <div className="p-4 bg-amber-50 rounded-xl">
-                    <p className="text-xs font-semibold text-amber-700 uppercase tracking-wide mb-1">Professional Indemnity Insurance</p>
-                    <p className="text-sm text-gray-800">{report.regulatoryMap.pii}</p>
+                  <div className="p-4" style={{ backgroundColor: `${GOLD}0d`, border: `1px solid ${GOLD}30`, borderLeft: `3px solid ${GOLD}`, borderRadius: 2 }}>
+                    <p className="text-xs font-semibold uppercase tracking-wide mb-1.5" style={{ color: GOLD }}>Professional Indemnity Insurance</p>
+                    <p className="text-sm" style={{ color: BODY }}>{report.regulatoryMap.pii}</p>
                   </div>
                 )}
                 {report.regulatoryMap.clientProcurement && (
-                  <div className="p-4 bg-green-50 rounded-xl">
-                    <p className="text-xs font-semibold text-green-700 uppercase tracking-wide mb-1">Client Procurement Pressure</p>
-                    <p className="text-sm text-gray-800">{report.regulatoryMap.clientProcurement}</p>
+                  <div className="p-4" style={{ backgroundColor: '#f5f3ef', border: `1px solid ${CARD_BORDER}`, borderLeft: `3px solid ${BODY}`, borderRadius: 2 }}>
+                    <p className="text-xs font-semibold uppercase tracking-wide mb-1.5" style={{ color: BODY }}>Client Procurement Pressure</p>
+                    <p className="text-sm" style={{ color: BODY }}>{report.regulatoryMap.clientProcurement}</p>
                   </div>
                 )}
                 {report.regulatoryMap.euAiAct && (
-                  <div className="p-4 bg-orange-50 rounded-xl border border-orange-200">
-                    <p className="text-xs font-semibold text-orange-700 uppercase tracking-wide mb-1">EU AI Act (Conditional)</p>
-                    <p className="text-sm text-gray-800">{report.regulatoryMap.euAiAct}</p>
+                  <div className="p-4" style={{ backgroundColor: `${NAVY}06`, border: `1px solid ${GOLD}40`, borderLeft: `3px solid ${GOLD}`, borderRadius: 2 }}>
+                    <p className="text-xs font-semibold uppercase tracking-wide mb-1.5" style={{ color: GOLD }}>EU AI Act (Applicable)</p>
+                    <p className="text-sm" style={{ color: BODY }}>{report.regulatoryMap.euAiAct}</p>
                   </div>
                 )}
               </div>
@@ -898,24 +1028,35 @@ export default function Home() {
 
           {/* Shadow AI */}
           {report?.shadowAi && (
-            <section className="bg-white rounded-2xl border border-gray-100 shadow-sm p-8">
-              <h2 className="text-lg font-bold text-gray-900 mb-3" style={{ fontFamily: 'var(--font-playfair)' }}>Shadow AI: The Question Most Firms Cannot Answer</h2>
-              <p className="text-sm text-gray-700 leading-relaxed">{report.shadowAi}</p>
+            <section className="bg-white p-8" style={{ border: `1px solid ${CARD_BORDER}`, borderRadius: 2 }}>
+              <p className="text-xs font-semibold uppercase tracking-widest mb-1" style={{ color: GOLD }}>Risk Profile</p>
+              <h2 className="mb-3" style={{ fontFamily: 'var(--font-playfair)', color: NAVY, fontWeight: 700, fontSize: '1.25rem' }}>
+                Shadow AI: The Question Most Firms Cannot Answer
+              </h2>
+              <p className="text-sm leading-relaxed" style={{ color: BODY }}>{report.shadowAi}</p>
             </section>
           )}
 
           {/* Opportunities */}
           {report?.opportunities?.length > 0 && (
-            <section className="bg-white rounded-2xl border border-gray-100 shadow-sm p-8">
-              <h2 className="text-lg font-bold text-gray-900 mb-4" style={{ fontFamily: 'var(--font-playfair)' }}>Top 3 AI Opportunities for Your Practice</h2>
-              <div className="space-y-4">
+            <section className="bg-white p-8" style={{ border: `1px solid ${CARD_BORDER}`, borderRadius: 2 }}>
+              <p className="text-xs font-semibold uppercase tracking-widest mb-1" style={{ color: GOLD }}>Opportunities</p>
+              <h2 className="mb-5" style={{ fontFamily: 'var(--font-playfair)', color: NAVY, fontWeight: 700, fontSize: '1.25rem' }}>
+                Top 3 AI Opportunities for Your Practice
+              </h2>
+              <div className="space-y-3">
                 {report.opportunities.slice(0, 3).map((opp, i) => (
-                  <div key={i} className="flex gap-4 p-4 bg-green-50/50 rounded-xl border border-green-100">
-                    <div className="w-8 h-8 rounded-full bg-green-500 text-white flex items-center justify-center font-bold text-sm shrink-0">{i + 1}</div>
+                  <div key={i} className="flex gap-4 p-4" style={{ backgroundColor: `${NAVY}06`, border: `1px solid ${NAVY}15`, borderRadius: 2 }}>
+                    <div
+                      className="flex items-center justify-center font-bold text-sm shrink-0 text-white"
+                      style={{ width: 32, height: 32, backgroundColor: NAVY, borderRadius: 2, fontFamily: 'var(--font-playfair)' }}
+                    >
+                      {String(i + 1).padStart(2, '0')}
+                    </div>
                     <div>
-                      <p className="font-semibold text-gray-900 text-sm">{opp.title}</p>
-                      <p className="text-sm text-gray-700 mt-1">{opp.benefit}</p>
-                      {opp.toolCategory && <p className="text-xs text-gray-500 mt-1 italic">e.g. {opp.toolCategory}</p>}
+                      <p className="font-semibold text-sm" style={{ color: NAVY }}>{opp.title}</p>
+                      <p className="text-sm mt-1" style={{ color: BODY }}>{opp.benefit}</p>
+                      {opp.toolCategory && <p className="text-xs mt-1 italic" style={{ color: MUTED }}>e.g. {opp.toolCategory}</p>}
                     </div>
                   </div>
                 ))}
@@ -925,27 +1066,48 @@ export default function Home() {
 
           {/* Exposures */}
           {report?.exposures?.length > 0 && (
-            <section className="bg-white rounded-2xl border border-gray-100 shadow-sm p-8">
-              <h2 className="text-lg font-bold text-gray-900 mb-4" style={{ fontFamily: 'var(--font-playfair)' }}>Top 3 Exposure Areas</h2>
-              <div className="space-y-4">
-                {report.exposures.slice(0, 3).map((exp, i) => (
-                  <div key={i} className="flex gap-4 p-4 bg-red-50/50 rounded-xl border border-red-100">
-                    <div className={`w-8 h-8 rounded-full flex items-center justify-center font-bold text-sm shrink-0 text-white ${exp.severity === 'HIGH' ? 'bg-red-500' : exp.severity === 'MEDIUM' ? 'bg-amber-500' : 'bg-gray-400'}`}>{i + 1}</div>
-                    <div>
-                      <div className="flex items-center gap-2 mb-1">
-                        <p className="font-semibold text-gray-900 text-sm">{exp.title}</p>
-                        <Badge variant="outline" className={`text-xs ${exp.severity === 'HIGH' ? 'border-red-300 text-red-700' : exp.severity === 'MEDIUM' ? 'border-amber-300 text-amber-700' : 'border-gray-300 text-gray-600'}`}>{exp.severity}</Badge>
+            <section className="bg-white p-8" style={{ border: `1px solid ${CARD_BORDER}`, borderRadius: 2 }}>
+              <p className="text-xs font-semibold uppercase tracking-widest mb-1" style={{ color: GOLD }}>Risk Assessment</p>
+              <h2 className="mb-5" style={{ fontFamily: 'var(--font-playfair)', color: NAVY, fontWeight: 700, fontSize: '1.25rem' }}>
+                Top 3 Exposure Areas
+              </h2>
+              <div className="space-y-3">
+                {report.exposures.slice(0, 3).map((exp, i) => {
+                  const sevColor = exp.severity === 'HIGH' ? '#b91c1c' : exp.severity === 'MEDIUM' ? '#b45309' : '#6b7280';
+                  const sevBg = exp.severity === 'HIGH' ? '#fef2f2' : exp.severity === 'MEDIUM' ? '#fffbeb' : '#f9fafb';
+                  const sevBorder = exp.severity === 'HIGH' ? '#fecaca' : exp.severity === 'MEDIUM' ? '#fde68a' : '#e5e7eb';
+                  return (
+                    <div
+                      key={i}
+                      className="flex gap-4 p-4"
+                      style={{ backgroundColor: sevBg, border: `1px solid ${sevBorder}`, borderLeft: `3px solid ${sevColor}`, borderRadius: 2 }}
+                    >
+                      <div
+                        className="flex items-center justify-center font-bold text-sm shrink-0 text-white"
+                        style={{ width: 32, height: 32, backgroundColor: sevColor, borderRadius: 2, fontFamily: 'var(--font-playfair)' }}
+                      >
+                        {String(i + 1).padStart(2, '0')}
                       </div>
-                      <p className="text-sm text-gray-700">{exp.description}</p>
+                      <div>
+                        <div className="flex items-center gap-2 mb-1">
+                          <p className="font-semibold text-sm" style={{ color: BODY }}>{exp.title}</p>
+                          <span
+                            className="text-xs font-semibold uppercase tracking-wide px-2 py-0.5"
+                            style={{ color: sevColor, border: `1px solid ${sevColor}40`, borderRadius: 2 }}
+                          >
+                            {exp.severity}
+                          </span>
+                        </div>
+                        <p className="text-sm" style={{ color: BODY }}>{exp.description}</p>
+                      </div>
                     </div>
-                  </div>
-                ))}
+                  );
+                })}
               </div>
             </section>
           )}
 
-
-          <p className="text-center text-xs text-gray-400 pb-6">
+          <p className="text-center text-xs pb-6" style={{ color: MUTED }}>
             CLEAR TRUST is a proprietary framework by Dr. Siamak Goudarzi / NexterLaw. This Snapshot is general information, not legal or regulatory advice. © NexterLaw
           </p>
         </main>
