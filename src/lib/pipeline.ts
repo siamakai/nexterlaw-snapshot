@@ -8,14 +8,17 @@ import type { SelfAssessmentAnswers, IntakeData } from '@/types';
 
 function extractErrorMessage(err: unknown): string {
   const raw = err instanceof Error ? err.message : String(err);
-  // Anthropic SDK error format: "400 {\"type\":\"error\",\"error\":{\"message\":\"...\"}}"
-  const jsonStart = raw.indexOf('{');
-  if (jsonStart !== -1) {
-    try {
-      const parsed = JSON.parse(raw.slice(jsonStart)) as { error?: { message?: string } };
-      if (parsed.error?.message) return parsed.error.message;
-    } catch {
-      // fall through to raw
+  // Anthropic SDK HTTP error format: "400 {\"type\":\"error\",\"error\":{\"message\":\"...\"}}"
+  // Only attempt JSON extraction when the raw message starts with an HTTP status code.
+  if (/^\d{3}\s/.test(raw)) {
+    const jsonStart = raw.indexOf('{');
+    if (jsonStart !== -1) {
+      try {
+        const parsed = JSON.parse(raw.slice(jsonStart)) as { error?: { message?: string } };
+        if (parsed.error?.message) return parsed.error.message;
+      } catch {
+        // fall through to raw
+      }
     }
   }
   return raw;
@@ -95,10 +98,12 @@ export async function runGenerationPipeline(submissionId: string): Promise<void>
     const generationTimeMs = Date.now() - startTime;
 
     // ── 4. Log API usage ─────────────────────────────────────────────────────
-    const totalTokens = result.inputTokens + result.outputTokens;
+    const totalTokens =
+      result.inputTokens + result.cacheWriteTokens + result.cacheReadTokens + result.outputTokens;
     console.log(
       `[pipeline] API usage — model=${result.modelUsed} requestId=${result.requestId}` +
-      ` input=${result.inputTokens} output=${result.outputTokens} total=${totalTokens}` +
+      ` input=${result.inputTokens} cache_write=${result.cacheWriteTokens} cache_read=${result.cacheReadTokens}` +
+      ` output=${result.outputTokens} total=${totalTokens}` +
       ` cost=$${result.estimatedCostUsd.toFixed(6)} timeMs=${generationTimeMs}`,
     );
 

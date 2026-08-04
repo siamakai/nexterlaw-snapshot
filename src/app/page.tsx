@@ -282,7 +282,7 @@ export default function Home() {
             setReportData(status);
             setStep('result');
           } else if (status.status === 'FAILED') {
-            setSubmitError(status.error ?? 'Report generation failed. Please try again.');
+            setSubmitError('We were unable to generate your report at this time. Please try again in a few minutes or contact us at hello@nexterlaw.com if the problem persists.');
             setStep('consent');
           } else {
             setTimeout(poll, 3000);
