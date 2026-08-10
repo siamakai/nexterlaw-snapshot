@@ -301,20 +301,22 @@ function ScorePage({
         <Text key={i} style={S.body}>{para.trim()}</Text>
       ))}
 
-      <Text style={S.h2}>Dimension Breakdown</Text>
-      {scores.dimensions.map(d => {
-        const fill = scoreBarColor(d.score);
-        return (
-          <View key={d.key} style={S.scoreRow}>
-            <Text style={S.scoreLetter}>{d.letter}</Text>
-            <Text style={S.scoreName}>{d.name}</Text>
-            <View style={S.scoreBar}>
-              <View style={[S.scoreBarFill, { width: `${d.score}%` as unknown as number, backgroundColor: fill }]} />
+      <View wrap={false}>
+        <Text style={S.h2}>Dimension Breakdown</Text>
+        {scores.dimensions.map(d => {
+          const fill = scoreBarColor(d.score);
+          return (
+            <View key={d.key} style={S.scoreRow}>
+              <Text style={S.scoreLetter}>{d.letter}</Text>
+              <Text style={S.scoreName}>{d.name}</Text>
+              <View style={S.scoreBar}>
+                <View style={[S.scoreBarFill, { width: `${d.score}%` as unknown as number, backgroundColor: fill }]} />
+              </View>
+              <Text style={[S.scoreValue, { color: fill }]}>{Math.round(d.score)}</Text>
             </View>
-            <Text style={[S.scoreValue, { color: fill }]}>{Math.round(d.score)}</Text>
-          </View>
-        );
-      })}
+          );
+        })}
+      </View>
 
       <Footer firmName={content.cover.firmName} />
     </Page>

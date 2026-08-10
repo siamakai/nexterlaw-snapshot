@@ -60,7 +60,7 @@ export async function retrieveKnowledgeBaseEntries(opts: RetrievalOptions): Prom
     prisma.knowledgeBaseEntry.findMany({
       where: { ...baseWhere, category: 'RISK_LIBRARY' },
       orderBy: { weight: 'desc' },
-      take: 5,
+      take: 6,
     }),
     opts.includeEuLayer
       ? prisma.knowledgeBaseEntry.findMany({

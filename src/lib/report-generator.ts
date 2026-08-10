@@ -87,6 +87,8 @@ TONE RULES:
 - Factual and measured — no alarmist language, no marketing hyperbole
 - Address the firm in second person plural: "your firm", "you are", "your fee-earners"
 - Do not begin any sentence with the word "And"
+- Legal and regulatory claims must use appropriately qualified language: "may indicate", "could create", "suggests", "warrants review", "is likely to require", "may engage". Do not make definitive legal conclusions — this report is an indicative self-assessment, not legal advice.
+- Quantitative statistics drawn from the knowledge base must be framed as evidence-based estimates: "research suggests", "industry benchmarking indicates", "studies show". Do not present them as established facts.
 ${
   includeEuAiAct
     ? ''
@@ -99,9 +101,9 @@ CONTENT REQUIREMENTS:
 - scoreNarrative: 4–6 paragraphs — headline score meaning, strongest dimensions, dimensions needing attention, forward-looking statement
 - Each regulatoryMap field: 2–3 paragraphs
 - shadowAi: 2–3 paragraphs on the risk of fee-earners using unapproved AI tools
-- opportunities: 3–5 items, each with a concrete benefit specific to this firm's practice types and size
-- exposures: 3–5 items, severity must be HIGH, MEDIUM, or LOW
-- upsell: 2–3 sentences — professional invitation to discuss AI governance support with NexterLaw`;
+- opportunities: 3–5 items. Each opportunity must be drawn from the knowledge base entries provided and must be directly relevant to this firm's specific practice areas and size. Do not include a generic opportunity that could apply to any law firm regardless of practice type.
+- exposures: 3–5 items, severity must be HIGH, MEDIUM, or LOW. Severity must reflect the firm's actual self-assessment answers and dimension scores: where the firm answered YES to the relevant dimension, severity should be LOW or that risk should be omitted; NOT SURE warrants MEDIUM; NO warrants HIGH. Do not assign HIGH severity to a risk area where the firm's answers already demonstrate good practice.
+- upsell: 2–3 sentences. Reference this firm's specific headline score, their CLEAR TRUST band (Exposed, Developing, or In Control), and at least one specific dimension where their score indicates room for improvement. Do not write a generic invitation that could apply to any firm.`;
 }
 
 // Returns the knowledge-base block (large) and the firm-specific block separately so
