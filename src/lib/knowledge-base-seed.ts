@@ -325,22 +325,6 @@ export const KNOWLEDGE_BASE_ENTRIES: KBEntry[] = [
     weight: 1.3,
   },
 
-  // ─── CLIO 2026 (US MARKET CONTEXT) ───────────────────────────────────────
-  // The following entry draws on the Clio Legal Trends Report 2026 (a survey of
-  // 1,702 US legal professionals). It is included as directional market context
-  // only — not as UK-specific data. All UK regulatory obligations are addressed
-  // in the REGULATORY_GUIDANCE and RISK_LIBRARY entries above.
-
-  {
-    category: 'USE_CASE_LIBRARY',
-    title: 'AI Adoption Without Revenue Return: The Efficiency Paradox',
-    bodyText: 'US legal market research (Clio Legal Trends Report 2026, a survey of 1,702 US legal professionals — cited here as directional context, not as UK-specific data) found that while 71–75% of solo and small US law firms use AI, only 31–32% have seen increased revenues as a result. The research described this as an efficiency paradox: AI reduces time on tasks but does not automatically convert that saving into revenue — particularly for firms billing by the hour, where time saved on a billable task reduces income unless replaced with new client work. The firms showing the strongest financial returns were not simply those using AI fastest. The US research found their shared characteristics were: reconsidering how work is priced, actively developing their client pipeline, and using tools that function together as an integrated system rather than as a disconnected collection. This directional finding is relevant context for UK law firms: it suggests that AI adoption without a structured approach to how tools are selected, integrated into workflows, and governed may not deliver the expected commercial return — and that the business case for AI readiness extends beyond regulatory compliance.',
-    appliedToPracticeTypes: ALL_PRACTICES,
-    appliedToFirmSizes: ALL_SIZES,
-    sourceReference: 'Clio Legal Trends Report 2026 (US market research, 1,702 respondents)',
-    weight: 1.3,
-  },
-
   // ─── RISK LIBRARY (~20 entries) ───────────────────────────────────────────
 
   {
@@ -439,30 +423,6 @@ export const KNOWLEDGE_BASE_ENTRIES: KBEntry[] = [
     appliedToFirmSizes: ['SMALL', 'MEDIUM', 'LARGE', 'ENTERPRISE'],
     sourceReference: 'UK GDPR Article 35; ICO DPIA Guidance 2023',
     weight: 1.6,
-  },
-
-  // ─── CLIO 2026 (US MARKET CONTEXT) ───────────────────────────────────────
-  // The following two entries draw on the Clio Legal Trends Report 2026 (a
-  // survey of 1,702 US legal professionals). Included as directional market
-  // benchmarking only — not as UK-specific regulatory data.
-
-  {
-    category: 'RISK_LIBRARY',
-    title: 'AI Policy Gap: How Widespread Is the Absence of Governance?',
-    bodyText: 'US legal market research (Clio Legal Trends Report 2026, a survey of 1,702 US legal professionals — cited here as directional context, not as UK-specific data) found that 57% of solo US law firms and 55% of small US law firms operate without any formal AI usage policy. The finding is consistent with what UK practitioners and regulators observe in this market. For UK law firms, the absence of a written AI policy is not simply a common shortfall to be normalised — it carries specific consequences. SRA Technology Guidance 2024 and PII insurers increasingly expect documented AI governance. Without a policy, fee-earners default to individual judgement on which tools to use and what data to enter, creating inconsistency that is difficult to supervise or evidence to a client, insurer, or regulator. The US research provides directional benchmarking: operating without an AI policy is statistically common in comparable legal markets, but that prevalence does not reduce the UK regulatory and professional obligations to have one in place.',
-    appliedToPracticeTypes: ALL_PRACTICES,
-    appliedToFirmSizes: ALL_SIZES,
-    sourceReference: 'Clio Legal Trends Report 2026 (US market research, 1,702 respondents); SRA Technology Guidance 2024',
-    weight: 1.4,
-  },
-  {
-    category: 'RISK_LIBRARY',
-    title: 'Generic Tool Fragmentation: Operational Risk Beyond Compliance',
-    bodyText: 'US legal market research (Clio Legal Trends Report 2026, a survey of 1,702 US legal professionals — cited here as directional context, not as UK-specific data) found that 47–48% of solo and small US law firms rely primarily on generic consumer AI tools, and that many operate a fragmented collection of disconnected tools — resulting in redundant data entry, multiple logins, and time lost switching between systems. Beyond the confidentiality and UK GDPR risks of consumer tools (which are addressed separately in this knowledge base), this operational fragmentation carries an additional risk: it makes uniform governance controls harder to apply and harder to evidence. When different fee-earners use different tools, chosen individually, a firm cannot demonstrate consistent data handling, consistent output verification, or consistent compliance with its own AI policy. For UK law firms, a patchwork of individually-adopted tools — even where each is used carefully — creates governance gaps that are difficult to monitor and difficult to evidence to a regulator, insurer, or client if challenged.',
-    appliedToPracticeTypes: ALL_PRACTICES,
-    appliedToFirmSizes: ALL_SIZES,
-    sourceReference: 'Clio Legal Trends Report 2026 (US market research, 1,702 respondents)',
-    weight: 1.3,
   },
 
   // ─── CONDITIONAL EU LAYER (~5 entries) ────────────────────────────────────

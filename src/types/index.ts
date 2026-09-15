@@ -89,3 +89,57 @@ export interface ReportStatusResponse {
   pdfUrl?: string;
   error?: string;
 }
+
+// ─── Global / Worldwide Snapshot ────────────────────────────────────────────
+// Separate from the UK types above by design — see prisma/schema.prisma
+// GlobalSubmission model comment. No score types here: the Global pathway
+// does not calculate or display any score.
+
+export type YesNoAnswer = 'YES' | 'NO';
+
+export interface GlobalContactInfo {
+  contactName: string;
+  firmName: string;
+  firmWebsite: string;
+  workEmail: string;
+  phone: string;
+}
+
+export interface GlobalJurisdictionInfo {
+  country: string;
+  stateProvince: string;
+  secondaryStates: string[];
+  regulatoryBody: string;
+  secondaryJurisdiction: string;
+}
+
+export interface GlobalFirmProfile {
+  firmSize: string;
+  primaryPracticeArea: string;
+  primaryPracticeAreaOther: string;
+  secondaryPracticeAreas: string[];
+}
+
+export interface GlobalCurrentAiUse {
+  currentlyUsingAi: CurrentAiUsageAnswer | '';
+  aiToolsInUse: string;
+  hasAiPolicy: SelfAssessmentAnswer | '';
+  clientsAskedAboutAi: SelfAssessmentAnswer | '';
+}
+
+export type CurrentAiUsageAnswer = 'YES' | 'NOT_SURE' | 'NO';
+
+export interface GlobalAdditionalContext {
+  biggestConcern: string;
+  whatWouldHelpMost: string;
+  contactPermission: YesNoAnswer | '';
+}
+
+export interface GlobalSubmitPayload {
+  contact: GlobalContactInfo;
+  jurisdiction: GlobalJurisdictionInfo;
+  firmProfile: GlobalFirmProfile;
+  currentAiUse: GlobalCurrentAiUse;
+  selfAssessment: SelfAssessmentAnswers;
+  additionalContext: GlobalAdditionalContext;
+}

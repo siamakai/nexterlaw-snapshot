@@ -13,6 +13,10 @@ const envSchema = z.object({
   NEXT_PUBLIC_APP_URL: z.string().url().default("http://localhost:3000"),
   NEXT_PUBLIC_PRIVACY_VERSION: z.string().default("1.0"),
   CALENDLY_BOOKING_URL: z.string().url().optional(),
+  // Internal team inbox for Global Snapshot submission notifications. Optional so
+  // existing deployments don't break before this is configured — if unset, the
+  // notification is skipped and logged rather than failing the submission.
+  TEAM_NOTIFICATION_EMAIL: z.string().email().optional(),
   GHL_WEBHOOK_URL: z.string().url().optional(),
   GHL_API_KEY: z.string().optional(),
   NODE_ENV: z.enum(["development", "production", "test"]).default("development"),

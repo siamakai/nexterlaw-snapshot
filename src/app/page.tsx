@@ -9,7 +9,15 @@ import {
   SELF_ASSESSMENT_ANSWERS,
   FREE_EMAIL_DOMAINS,
   SCORE_BANDS,
+  type DimensionKey,
 } from '@/lib/constants';
+import {
+  GLOBAL_COUNTRIES,
+  COUNTRIES_WITH_REGIONS,
+  GLOBAL_PRACTICE_AREAS,
+  GLOBAL_FIRM_SIZE_OPTIONS,
+  YES_NO_OPTIONS,
+} from '@/lib/global-jurisdictions';
 import type {
   IntakeData,
   SelfAssessmentAnswers,
@@ -17,6 +25,11 @@ import type {
   ReportStatusResponse,
   ClearTrustScores,
   GeneratedReportContent,
+  GlobalContactInfo,
+  GlobalJurisdictionInfo,
+  GlobalFirmProfile,
+  GlobalCurrentAiUse,
+  GlobalAdditionalContext,
 } from '@/types';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
@@ -26,7 +39,11 @@ import { Badge } from '@/components/ui/badge';
 
 // ─── Types ────────────────────────────────────────────────────────────────────
 
-type Step = 'landing' | 'intake' | 'selfAssessment' | 'consent' | 'processing' | 'result';
+type Step =
+  | 'landing' | 'regionChoice' | 'intake' | 'selfAssessment' | 'consent' | 'processing' | 'result'
+  // Global / Worldwide Snapshot — additive, does not touch any UK step above
+  | 'globalJurisdiction' | 'globalDetails' | 'globalAiUse' | 'globalAssessment'
+  | 'globalContext' | 'globalSubmitting' | 'globalDone';
 
 const EMPTY_INTAKE: IntakeData = {
   firmName: '',
@@ -50,6 +67,44 @@ const EMPTY_ANSWERS: SelfAssessmentAnswers = {
   usageGovernance: '',
   security: '',
   traceability: '',
+};
+
+// ─── Global / Worldwide Snapshot — empty state ─────────────────────────────────
+
+const EMPTY_GLOBAL_JURISDICTION: GlobalJurisdictionInfo = {
+  country: '',
+  stateProvince: '',
+  secondaryStates: [],
+  regulatoryBody: '',
+  secondaryJurisdiction: '',
+};
+
+const EMPTY_GLOBAL_CONTACT: GlobalContactInfo = {
+  contactName: '',
+  firmName: '',
+  firmWebsite: '',
+  workEmail: '',
+  phone: '',
+};
+
+const EMPTY_GLOBAL_PROFILE: GlobalFirmProfile = {
+  firmSize: '',
+  primaryPracticeArea: '',
+  primaryPracticeAreaOther: '',
+  secondaryPracticeAreas: [],
+};
+
+const EMPTY_GLOBAL_AI_USE: GlobalCurrentAiUse = {
+  currentlyUsingAi: '',
+  aiToolsInUse: '',
+  hasAiPolicy: '',
+  clientsAskedAboutAi: '',
+};
+
+const EMPTY_GLOBAL_CONTEXT: GlobalAdditionalContext = {
+  biggestConcern: '',
+  whatWouldHelpMost: '',
+  contactPermission: '',
 };
 
 // ─── Design tokens ────────────────────────────────────────────────────────────
@@ -216,6 +271,73 @@ function DimensionBar({ name, letter, score, dark = false }: { name: string; let
   );
 }
 
+// ─── Global Snapshot helpers ────────────────────────────────────────────────────
+
+function TriToggle({
+  value,
+  onChange,
+}: {
+  value: SelfAssessmentAnswer | '';
+  onChange: (v: SelfAssessmentAnswer) => void;
+}) {
+  return (
+    <div className="flex gap-2">
+      {SELF_ASSESSMENT_ANSWERS.map(opt => {
+        const sel = value === opt.value;
+        const selStyle =
+          opt.value === 'YES'
+            ? { borderColor: '#16a34a', bg: '#f0fdf4', color: '#15803d' }
+            : opt.value === 'NO'
+            ? { borderColor: '#dc2626', bg: '#fef2f2', color: '#b91c1c' }
+            : { borderColor: '#d97706', bg: '#fffbeb', color: '#b45309' };
+        return (
+          <button
+            key={opt.value}
+            type="button"
+            onClick={() => onChange(opt.value as SelfAssessmentAnswer)}
+            className="flex-1 py-2 text-sm font-medium transition-colors"
+            style={{
+              border: `1px solid ${sel ? selStyle.borderColor : R_BORDER}`,
+              borderRadius: 2,
+              backgroundColor: sel ? selStyle.bg : 'rgba(13,31,60,0.6)',
+              color: sel ? selStyle.color : R_BODY,
+            }}
+          >
+            {opt.label}
+          </button>
+        );
+      })}
+    </div>
+  );
+}
+
+// The UK flow's CLEAR TRUST question wording (constants.ts, shared with the UK
+// self-assessment step below) is left untouched by design. The Global flow
+// uses the universal wording from the NexterLaw Global Snapshot spec instead —
+// word-for-word, for all 10 dimensions.
+const GLOBAL_QUESTION_OVERRIDES: Partial<Record<DimensionKey, string>> = {
+  compliance: "Can you demonstrate compliance with your jurisdiction's legal requirements for AI use?",
+  literacy: 'Does your team have training on AI capabilities and limitations?',
+  explainability: 'Can you explain how AI assisted a legal decision (to a client or court)?',
+  accountability: 'Is there a designated person responsible for AI oversight?',
+  rights: 'Do you have processes to respect client data rights (deletion, opt-out, etc.)?',
+  transparency: 'Do you disclose AI use to clients?',
+  reliability: 'Do you test AI outputs before using them in client work?',
+  usageGovernance: 'Do you have a written policy on which AI tools are permitted?',
+  security: 'Do you have data security and confidentiality controls for AI?',
+  traceability: 'Can you audit which AI was used on a given matter?',
+};
+
+const globalSelectStyle: React.CSSProperties = {
+  border: `1px solid ${R_BORDER}`,
+  borderRadius: 2,
+  backgroundColor: 'rgba(13,31,60,0.6)',
+  color: R_CREAM,
+  padding: '10px 12px',
+  fontSize: '0.875rem',
+  width: '100%',
+};
+
 // ─── Main page ────────────────────────────────────────────────────────────────
 
 export default function Home() {
@@ -228,6 +350,55 @@ export default function Home() {
   const [intakeErrors, setIntakeErrors] = useState<Partial<Record<keyof IntakeData, string>>>({});
   const [submitError, setSubmitError] = useState<string | null>(null);
   const [pollProgress, setPollProgress] = useState(0);
+
+  // ─── Global / Worldwide Snapshot state ────────────────────────────────────
+  const [globalJurisdiction, setGlobalJurisdiction] = useState<GlobalJurisdictionInfo>(EMPTY_GLOBAL_JURISDICTION);
+  const [globalContact, setGlobalContact] = useState<GlobalContactInfo>(EMPTY_GLOBAL_CONTACT);
+  const [globalProfile, setGlobalProfile] = useState<GlobalFirmProfile>(EMPTY_GLOBAL_PROFILE);
+  const [globalAiUse, setGlobalAiUse] = useState<GlobalCurrentAiUse>(EMPTY_GLOBAL_AI_USE);
+  const [globalAnswers, setGlobalAnswers] = useState<SelfAssessmentAnswers>(EMPTY_ANSWERS);
+  const [globalContext, setGlobalContext] = useState<GlobalAdditionalContext>(EMPTY_GLOBAL_CONTEXT);
+  const [globalErrors, setGlobalErrors] = useState<Record<string, string>>({});
+  const [globalSubmitError, setGlobalSubmitError] = useState<string | null>(null);
+
+  const globalRegionOptions = COUNTRIES_WITH_REGIONS[globalJurisdiction.country];
+  const globalNeedsRegulatoryBody = !!globalJurisdiction.country && !globalRegionOptions;
+  const globalAllAnswered = CLEAR_TRUST_DIMENSIONS.every(d => globalAnswers[d.key] !== '');
+
+  const handleGlobalSubmit = useCallback(async () => {
+    const errs: Record<string, string> = {};
+    if (globalContext.contactPermission === '') errs.contactPermission = 'Please answer this question.';
+    setGlobalErrors(errs);
+    if (Object.keys(errs).length > 0) return;
+
+    setGlobalSubmitError(null);
+    setStep('globalSubmitting');
+
+    try {
+      const res = await fetch('/api/submit-global', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          contact: globalContact,
+          jurisdiction: globalJurisdiction,
+          firmProfile: globalProfile,
+          currentAiUse: globalAiUse,
+          selfAssessment: globalAnswers,
+          additionalContext: globalContext,
+        }),
+      });
+
+      if (!res.ok) {
+        const body = await res.json().catch(() => ({}));
+        throw new Error((body as { error?: string }).error ?? 'Submission failed. Please try again.');
+      }
+
+      setStep('globalDone');
+    } catch (e) {
+      setGlobalSubmitError(e instanceof Error ? e.message : 'Something went wrong.');
+      setStep('globalContext');
+    }
+  }, [globalContact, globalJurisdiction, globalProfile, globalAiUse, globalAnswers, globalContext]);
 
   const validateIntake = useCallback((): boolean => {
     const errs: Partial<Record<keyof IntakeData, string>> = {};
@@ -488,7 +659,7 @@ export default function Home() {
               style={{ animation: 'heroFadeUp 0.7s ease-out 0.56s forwards', opacity: 0, marginTop: 32 }}
             >
               <button
-                onClick={() => setStep('intake')}
+                onClick={() => setStep('regionChoice')}
                 className="inline-flex items-center gap-3 px-10 py-4 text-base font-semibold transition-opacity hover:opacity-90"
                 style={{ backgroundColor: GOLD, color: '#0d1f3c', borderRadius: 2 }}
               >
@@ -557,6 +728,78 @@ export default function Home() {
           </a>
         </footer>
 
+      </div>
+    );
+  }
+
+  // ─── Region choice — shared fork between the UK flow and the Global flow ───
+
+  if (step === 'regionChoice') {
+    return (
+      <div style={{ minHeight: '100vh', display: 'flex', flexDirection: 'column', backgroundColor: R_BG }}>
+        <div style={{ position: 'fixed', inset: 0, zIndex: 0, overflow: 'hidden', pointerEvents: 'none' }}>
+          <img src="/hero.webp" alt="" aria-hidden="true" style={{ width: '100%', height: '100%', objectFit: 'cover', objectPosition: 'center 30%', opacity: 0.07 }} />
+        </div>
+
+        <header className="px-6 py-4 flex justify-between items-center max-w-6xl mx-auto w-full" style={{ position: 'relative', zIndex: 10 }}>
+          <NLLogo dark />
+        </header>
+        <div style={{ position: 'relative', zIndex: 10, height: 1, backgroundColor: 'rgba(184,144,42,0.15)' }} />
+        <div style={{ position: 'relative', zIndex: 10, height: 2, background: `linear-gradient(90deg, ${NAVY} 0%, ${GOLD} 50%, ${NAVY} 100%)` }} />
+
+        <main
+          className="flex-1 flex flex-col items-center justify-center px-6 py-16 max-w-2xl mx-auto w-full"
+          style={{ position: 'relative', zIndex: 10 }}
+        >
+          <p className="text-xs font-semibold uppercase tracking-widest mb-2" style={{ color: GOLD }}>Before you start</p>
+          <h2
+            className="mb-3 text-center"
+            style={{ fontFamily: 'var(--font-playfair)', color: R_CREAM, fontWeight: 700, fontSize: '1.85rem', lineHeight: 1.25 }}
+          >
+            Where is your firm based?
+          </h2>
+          <p className="mb-10 text-center" style={{ color: R_BODY, maxWidth: '32rem' }}>
+            This determines which version of the Snapshot you get — an instant automated UK report, or a manually
+            prepared report for any other country.
+          </p>
+
+          <div className="grid sm:grid-cols-2 gap-4 w-full">
+            <button
+              onClick={() => setStep('intake')}
+              className="text-left p-6 transition-colors"
+              style={{ backgroundColor: R_CARD, border: `1px solid ${R_BORDER}`, borderLeft: `3px solid ${GOLD}`, borderRadius: 2 }}
+            >
+              <p className="text-xs font-semibold uppercase tracking-widest mb-2" style={{ color: GOLD }}>United Kingdom</p>
+              <p className="font-semibold mb-1.5" style={{ color: R_CREAM, fontSize: '1.05rem' }}>Get your instant UK Snapshot</p>
+              <p className="text-sm" style={{ color: R_BODY, lineHeight: 1.6 }}>
+                Automated report generated in under a minute, scored against SRA, UK GDPR, and PII guidance.
+              </p>
+              <span className="inline-block mt-4 text-sm font-semibold" style={{ color: GOLD }}>Continue →</span>
+            </button>
+
+            <button
+              onClick={() => setStep('globalJurisdiction')}
+              className="text-left p-6 transition-colors"
+              style={{ backgroundColor: R_CARD, border: `1px solid ${R_BORDER}`, borderRadius: 2 }}
+            >
+              <p className="text-xs font-semibold uppercase tracking-widest mb-2" style={{ color: R_MUTED }}>Any other country</p>
+              <p className="font-semibold mb-1.5" style={{ color: R_CREAM, fontSize: '1.05rem' }}>Get your Global Snapshot</p>
+              <p className="text-sm" style={{ color: R_BODY, lineHeight: 1.6 }}>
+                Complete the same core assessment; our team researches your jurisdiction and prepares your report
+                by hand, delivered within ~48 hours.
+              </p>
+              <span className="inline-block mt-4 text-sm font-semibold" style={{ color: R_CREAM }}>Continue →</span>
+            </button>
+          </div>
+
+          <button
+            onClick={() => setStep('landing')}
+            className="mt-10 text-sm underline transition-opacity hover:opacity-80"
+            style={{ color: R_MUTED }}
+          >
+            ← Back
+          </button>
+        </main>
       </div>
     );
   }
@@ -754,7 +997,7 @@ export default function Home() {
 
           <div className="mt-6 flex gap-3">
             <button
-              onClick={() => setStep('landing')}
+              onClick={() => setStep('regionChoice')}
               className="flex-1 px-6 py-3 text-sm font-medium"
               style={{ border: `1px solid ${R_BORDER}`, borderRadius: 2, backgroundColor: 'transparent', color: R_CREAM }}
             >
@@ -1390,6 +1633,640 @@ export default function Home() {
             </p>
           </div>
 
+        </main>
+      </div>
+    );
+  }
+
+  // ─── Global: Jurisdiction ──────────────────────────────────────────────────
+
+  if (step === 'globalJurisdiction') {
+    const canContinue =
+      !!globalJurisdiction.country &&
+      (globalRegionOptions ? !!globalJurisdiction.stateProvince : !!globalJurisdiction.regulatoryBody.trim());
+
+    return (
+      <div style={{ minHeight: '100vh', display: 'flex', flexDirection: 'column', backgroundColor: R_BG }}>
+        <header className="px-6 py-4 flex justify-between items-center max-w-6xl mx-auto w-full">
+          <NLLogo dark />
+          <StepIndicator current={1} total={5} dark />
+        </header>
+        <div style={{ height: 1, backgroundColor: 'rgba(184,144,42,0.15)' }} />
+        <div style={{ height: 2, background: `linear-gradient(90deg, ${NAVY} 0%, ${GOLD} 20%, ${NAVY} 100%)` }} />
+
+        <main className="flex-1 px-6 py-10 max-w-2xl mx-auto w-full">
+          <p className="text-xs font-semibold uppercase tracking-widest mb-2" style={{ color: GOLD }}>Global Snapshot · Step 1 of 5</p>
+          <h2 className="mb-1" style={{ fontFamily: 'var(--font-playfair)', color: R_CREAM, fontWeight: 700, fontSize: '1.75rem', lineHeight: 1.25 }}>
+            Which jurisdiction is your firm in?
+          </h2>
+          <p className="mb-8" style={{ color: R_BODY }}>This determines which regulatory framework applies to your report.</p>
+
+          <div className="p-8 space-y-6" style={{ backgroundColor: R_CARD, border: `1px solid ${R_BORDER}`, borderRadius: 2 }}>
+            <div>
+              <Label className="text-sm font-semibold mb-1.5 block" style={{ color: R_CREAM }}>
+                Country <span style={{ color: GOLD }}>*</span>
+              </Label>
+              <select
+                value={globalJurisdiction.country}
+                onChange={e => setGlobalJurisdiction({ ...EMPTY_GLOBAL_JURISDICTION, country: e.target.value })}
+                style={globalSelectStyle}
+              >
+                <option value="">Select a country…</option>
+                {GLOBAL_COUNTRIES.map(c => <option key={c} value={c}>{c}</option>)}
+              </select>
+            </div>
+
+            {globalRegionOptions && (
+              <div>
+                <Label className="text-sm font-semibold mb-1.5 block" style={{ color: R_CREAM }}>
+                  Which {globalJurisdiction.country === 'United States' ? 'state' : globalJurisdiction.country === 'Canada' ? 'province' : 'state/territory'} is your primary license? <span style={{ color: GOLD }}>*</span>
+                </Label>
+                <select
+                  value={globalJurisdiction.stateProvince}
+                  onChange={e => setGlobalJurisdiction(p => ({ ...p, stateProvince: e.target.value }))}
+                  style={globalSelectStyle}
+                >
+                  <option value="">Select…</option>
+                  {globalRegionOptions.map(r => <option key={r} value={r}>{r}</option>)}
+                </select>
+
+                <Label className="text-sm font-medium mt-4 mb-1.5 block" style={{ color: R_BODY }}>
+                  Other states/provinces <span className="font-normal text-xs" style={{ color: R_MUTED }}>(optional)</span>
+                </Label>
+                <div className="grid grid-cols-2 sm:grid-cols-3 gap-2 max-h-40 overflow-y-auto pr-1">
+                  {globalRegionOptions.filter(r => r !== globalJurisdiction.stateProvince).map(r => {
+                    const checked = globalJurisdiction.secondaryStates.includes(r);
+                    return (
+                      <label key={r} className="flex items-center gap-2 text-xs" style={{ color: checked ? GOLD : R_BODY }}>
+                        <Checkbox
+                          checked={checked}
+                          onCheckedChange={v => setGlobalJurisdiction(p => ({
+                            ...p,
+                            secondaryStates: v ? [...p.secondaryStates, r] : p.secondaryStates.filter(s => s !== r),
+                          }))}
+                        />
+                        {r}
+                      </label>
+                    );
+                  })}
+                </div>
+              </div>
+            )}
+
+            {globalNeedsRegulatoryBody && (
+              <>
+                <div>
+                  <Label htmlFor="regulatoryBody" className="text-sm font-semibold mb-1.5 block" style={{ color: R_CREAM }}>
+                    What is your primary regulatory body or bar association? <span style={{ color: GOLD }}>*</span>
+                  </Label>
+                  <Input
+                    id="regulatoryBody"
+                    value={globalJurisdiction.regulatoryBody}
+                    onChange={e => setGlobalJurisdiction(p => ({ ...p, regulatoryBody: e.target.value }))}
+                    placeholder="e.g. Law Society of Hong Kong"
+                    style={{ borderColor: R_BORDER, borderRadius: 2, backgroundColor: 'rgba(13,31,60,0.6)', color: R_CREAM }}
+                  />
+                </div>
+                <div>
+                  <Label htmlFor="secondaryJurisdiction" className="text-sm font-medium mb-1.5 block" style={{ color: R_BODY }}>
+                    Secondary jurisdiction <span className="font-normal text-xs" style={{ color: R_MUTED }}>(optional)</span>
+                  </Label>
+                  <Input
+                    id="secondaryJurisdiction"
+                    value={globalJurisdiction.secondaryJurisdiction}
+                    onChange={e => setGlobalJurisdiction(p => ({ ...p, secondaryJurisdiction: e.target.value }))}
+                    placeholder="e.g. Also licensed in England"
+                    style={{ borderColor: R_BORDER, borderRadius: 2, backgroundColor: 'rgba(13,31,60,0.6)', color: R_CREAM }}
+                  />
+                </div>
+              </>
+            )}
+          </div>
+
+          <div className="mt-6 flex gap-3">
+            <button
+              onClick={() => setStep('regionChoice')}
+              className="flex-1 px-6 py-3 text-sm font-medium"
+              style={{ border: `1px solid ${R_BORDER}`, borderRadius: 2, backgroundColor: 'transparent', color: R_CREAM }}
+            >
+              ← Back
+            </button>
+            <button
+              onClick={() => canContinue && setStep('globalDetails')}
+              className="flex-1 px-6 py-3 text-sm font-semibold"
+              style={{
+                backgroundColor: canContinue ? GOLD : 'rgba(184,144,42,0.35)',
+                borderRadius: 2,
+                cursor: canContinue ? 'pointer' : 'not-allowed',
+                color: canContinue ? R_BG : 'rgba(237,232,224,0.45)',
+              }}
+            >
+              Continue →
+            </button>
+          </div>
+        </main>
+      </div>
+    );
+  }
+
+  // ─── Global: Contact & Firm Details ───────────────────────────────────────
+
+  if (step === 'globalDetails') {
+    const canContinue =
+      globalContact.contactName.trim() && globalContact.firmName.trim() && globalContact.workEmail.trim() &&
+      globalProfile.firmSize && globalProfile.primaryPracticeArea &&
+      (globalProfile.primaryPracticeArea !== 'other' || globalProfile.primaryPracticeAreaOther.trim());
+
+    return (
+      <div style={{ minHeight: '100vh', display: 'flex', flexDirection: 'column', backgroundColor: R_BG }}>
+        <header className="px-6 py-4 flex justify-between items-center max-w-6xl mx-auto w-full">
+          <NLLogo dark />
+          <StepIndicator current={2} total={5} dark />
+        </header>
+        <div style={{ height: 1, backgroundColor: 'rgba(184,144,42,0.15)' }} />
+        <div style={{ height: 2, background: `linear-gradient(90deg, ${NAVY} 0%, ${GOLD} 40%, ${NAVY} 100%)` }} />
+
+        <main className="flex-1 px-6 py-10 max-w-2xl mx-auto w-full">
+          <p className="text-xs font-semibold uppercase tracking-widest mb-2" style={{ color: GOLD }}>Global Snapshot · Step 2 of 5</p>
+          <h2 className="mb-1" style={{ fontFamily: 'var(--font-playfair)', color: R_CREAM, fontWeight: 700, fontSize: '1.75rem', lineHeight: 1.25 }}>
+            Tell us about your firm
+          </h2>
+          <p className="mb-8" style={{ color: R_BODY }}>We&apos;ll use this to prepare your manual report.</p>
+
+          <div className="p-8 space-y-6" style={{ backgroundColor: R_CARD, border: `1px solid ${R_BORDER}`, borderRadius: 2 }}>
+            <div className="grid grid-cols-2 gap-4">
+              <div>
+                <Label className="text-sm font-semibold mb-1.5 block" style={{ color: R_CREAM }}>
+                  Your name <span style={{ color: GOLD }}>*</span>
+                </Label>
+                <Input
+                  value={globalContact.contactName}
+                  onChange={e => setGlobalContact(p => ({ ...p, contactName: e.target.value }))}
+                  style={{ borderColor: R_BORDER, borderRadius: 2, backgroundColor: 'rgba(13,31,60,0.6)', color: R_CREAM }}
+                />
+              </div>
+              <div>
+                <Label className="text-sm font-semibold mb-1.5 block" style={{ color: R_CREAM }}>
+                  Firm name <span style={{ color: GOLD }}>*</span>
+                </Label>
+                <Input
+                  value={globalContact.firmName}
+                  onChange={e => setGlobalContact(p => ({ ...p, firmName: e.target.value }))}
+                  style={{ borderColor: R_BORDER, borderRadius: 2, backgroundColor: 'rgba(13,31,60,0.6)', color: R_CREAM }}
+                />
+              </div>
+            </div>
+
+            <div className="grid grid-cols-2 gap-4">
+              <div>
+                <Label className="text-sm font-medium mb-1.5 block" style={{ color: R_BODY }}>
+                  Firm website <span className="font-normal text-xs" style={{ color: R_MUTED }}>(optional)</span>
+                </Label>
+                <Input
+                  value={globalContact.firmWebsite}
+                  onChange={e => setGlobalContact(p => ({ ...p, firmWebsite: e.target.value }))}
+                  placeholder="https://"
+                  style={{ borderColor: R_BORDER, borderRadius: 2, backgroundColor: 'rgba(13,31,60,0.6)', color: R_CREAM }}
+                />
+              </div>
+              <div>
+                <Label className="text-sm font-medium mb-1.5 block" style={{ color: R_BODY }}>
+                  Phone <span className="font-normal text-xs" style={{ color: R_MUTED }}>(optional)</span>
+                </Label>
+                <Input
+                  value={globalContact.phone}
+                  onChange={e => setGlobalContact(p => ({ ...p, phone: e.target.value }))}
+                  style={{ borderColor: R_BORDER, borderRadius: 2, backgroundColor: 'rgba(13,31,60,0.6)', color: R_CREAM }}
+                />
+              </div>
+            </div>
+
+            <div>
+              <Label className="text-sm font-semibold mb-1.5 block" style={{ color: R_CREAM }}>
+                Email address <span style={{ color: GOLD }}>*</span> <span className="font-normal text-xs" style={{ color: R_MUTED }}>(report delivery address)</span>
+              </Label>
+              <Input
+                type="email"
+                value={globalContact.workEmail}
+                onChange={e => setGlobalContact(p => ({ ...p, workEmail: e.target.value }))}
+                style={{ borderColor: R_BORDER, borderRadius: 2, backgroundColor: 'rgba(13,31,60,0.6)', color: R_CREAM }}
+              />
+            </div>
+
+            <div className="h-px" style={{ backgroundColor: R_BORDER }} />
+
+            <div>
+              <Label className="text-sm font-semibold block mb-2" style={{ color: R_CREAM }}>
+                Firm size <span style={{ color: GOLD }}>*</span>
+              </Label>
+              <div className="grid grid-cols-2 sm:grid-cols-3 gap-2">
+                {GLOBAL_FIRM_SIZE_OPTIONS.map(opt => (
+                  <button
+                    key={opt.value}
+                    type="button"
+                    onClick={() => setGlobalProfile(p => ({ ...p, firmSize: opt.value }))}
+                    className="px-3 py-2.5 text-sm font-medium transition-colors"
+                    style={{
+                      border: `1px solid ${globalProfile.firmSize === opt.value ? GOLD : R_BORDER}`,
+                      borderRadius: 2,
+                      backgroundColor: globalProfile.firmSize === opt.value ? GOLD : 'rgba(13,31,60,0.4)',
+                      color: globalProfile.firmSize === opt.value ? R_BG : R_BODY,
+                    }}
+                  >
+                    {opt.label}
+                  </button>
+                ))}
+              </div>
+            </div>
+
+            <div>
+              <Label className="text-sm font-semibold block mb-2" style={{ color: R_CREAM }}>
+                Primary practice area <span style={{ color: GOLD }}>*</span>
+              </Label>
+              <select
+                value={globalProfile.primaryPracticeArea}
+                onChange={e => setGlobalProfile(p => ({ ...p, primaryPracticeArea: e.target.value }))}
+                style={globalSelectStyle}
+              >
+                <option value="">Select…</option>
+                {GLOBAL_PRACTICE_AREAS.map(pa => <option key={pa.slug} value={pa.slug}>{pa.label}</option>)}
+              </select>
+              {globalProfile.primaryPracticeArea === 'other' && (
+                <Input
+                  className="mt-2"
+                  value={globalProfile.primaryPracticeAreaOther}
+                  onChange={e => setGlobalProfile(p => ({ ...p, primaryPracticeAreaOther: e.target.value }))}
+                  placeholder="Please specify"
+                  style={{ borderColor: R_BORDER, borderRadius: 2, backgroundColor: 'rgba(13,31,60,0.6)', color: R_CREAM }}
+                />
+              )}
+            </div>
+
+            <div>
+              <Label className="text-sm font-medium block mb-2" style={{ color: R_BODY }}>
+                Secondary practice areas <span className="font-normal text-xs" style={{ color: R_MUTED }}>(optional)</span>
+              </Label>
+              <div className="grid grid-cols-2 gap-2">
+                {GLOBAL_PRACTICE_AREAS.filter(pa => pa.slug !== globalProfile.primaryPracticeArea).map(pa => {
+                  const checked = globalProfile.secondaryPracticeAreas.includes(pa.slug);
+                  return (
+                    <label key={pa.slug} className="flex items-center gap-2 text-xs" style={{ color: checked ? GOLD : R_BODY }}>
+                      <Checkbox
+                        checked={checked}
+                        onCheckedChange={v => setGlobalProfile(p => ({
+                          ...p,
+                          secondaryPracticeAreas: v
+                            ? [...p.secondaryPracticeAreas, pa.slug]
+                            : p.secondaryPracticeAreas.filter(s => s !== pa.slug),
+                        }))}
+                      />
+                      {pa.label}
+                    </label>
+                  );
+                })}
+              </div>
+            </div>
+          </div>
+
+          <div className="mt-6 flex gap-3">
+            <button
+              onClick={() => setStep('globalJurisdiction')}
+              className="flex-1 px-6 py-3 text-sm font-medium"
+              style={{ border: `1px solid ${R_BORDER}`, borderRadius: 2, backgroundColor: 'transparent', color: R_CREAM }}
+            >
+              ← Back
+            </button>
+            <button
+              onClick={() => canContinue && setStep('globalAiUse')}
+              className="flex-1 px-6 py-3 text-sm font-semibold"
+              style={{
+                backgroundColor: canContinue ? GOLD : 'rgba(184,144,42,0.35)',
+                borderRadius: 2,
+                cursor: canContinue ? 'pointer' : 'not-allowed',
+                color: canContinue ? R_BG : 'rgba(237,232,224,0.45)',
+              }}
+            >
+              Continue →
+            </button>
+          </div>
+        </main>
+      </div>
+    );
+  }
+
+  // ─── Global: Current AI Use ────────────────────────────────────────────────
+
+  if (step === 'globalAiUse') {
+    const canContinue = !!globalAiUse.currentlyUsingAi && !!globalAiUse.hasAiPolicy && !!globalAiUse.clientsAskedAboutAi;
+
+    return (
+      <div style={{ minHeight: '100vh', display: 'flex', flexDirection: 'column', backgroundColor: R_BG }}>
+        <header className="px-6 py-4 flex justify-between items-center max-w-6xl mx-auto w-full">
+          <NLLogo dark />
+          <StepIndicator current={3} total={5} dark />
+        </header>
+        <div style={{ height: 1, backgroundColor: 'rgba(184,144,42,0.15)' }} />
+        <div style={{ height: 2, background: `linear-gradient(90deg, ${NAVY} 0%, ${GOLD} 60%, ${NAVY} 100%)` }} />
+
+        <main className="flex-1 px-6 py-10 max-w-2xl mx-auto w-full">
+          <p className="text-xs font-semibold uppercase tracking-widest mb-2" style={{ color: GOLD }}>Global Snapshot · Step 3 of 5</p>
+          <h2 className="mb-1" style={{ fontFamily: 'var(--font-playfair)', color: R_CREAM, fontWeight: 700, fontSize: '1.75rem', lineHeight: 1.25 }}>
+            Your current AI use
+          </h2>
+          <p className="mb-8" style={{ color: R_BODY }}>A quick picture of where things stand today.</p>
+
+          <div className="p-8 space-y-6" style={{ backgroundColor: R_CARD, border: `1px solid ${R_BORDER}`, borderRadius: 2 }}>
+            <div>
+              <Label className="text-sm font-semibold block mb-2" style={{ color: R_CREAM }}>
+                Are you currently using AI tools in your practice? <span style={{ color: GOLD }}>*</span>
+              </Label>
+              <TriToggle value={globalAiUse.currentlyUsingAi} onChange={v => setGlobalAiUse(p => ({ ...p, currentlyUsingAi: v }))} />
+            </div>
+
+            {globalAiUse.currentlyUsingAi === 'YES' && (
+              <div>
+                <Label className="text-sm font-medium block mb-1.5" style={{ color: R_BODY }}>
+                  Which tools? <span className="font-normal text-xs" style={{ color: R_MUTED }}>(optional)</span>
+                </Label>
+                <textarea
+                  value={globalAiUse.aiToolsInUse}
+                  onChange={e => setGlobalAiUse(p => ({ ...p, aiToolsInUse: e.target.value }))}
+                  placeholder="e.g. ChatGPT, Claude, Westlaw AI, LexisNexis+"
+                  rows={2}
+                  className="w-full text-sm p-3"
+                  style={{ border: `1px solid ${R_BORDER}`, borderRadius: 2, backgroundColor: 'rgba(13,31,60,0.6)', color: R_CREAM }}
+                />
+              </div>
+            )}
+
+            <div>
+              <Label className="text-sm font-semibold block mb-2" style={{ color: R_CREAM }}>
+                Do you have a formal AI policy? <span style={{ color: GOLD }}>*</span>
+              </Label>
+              <TriToggle value={globalAiUse.hasAiPolicy} onChange={v => setGlobalAiUse(p => ({ ...p, hasAiPolicy: v }))} />
+            </div>
+
+            <div>
+              <Label className="text-sm font-semibold block mb-2" style={{ color: R_CREAM }}>
+                Have clients asked about your AI use? <span style={{ color: GOLD }}>*</span>
+              </Label>
+              <TriToggle value={globalAiUse.clientsAskedAboutAi} onChange={v => setGlobalAiUse(p => ({ ...p, clientsAskedAboutAi: v }))} />
+            </div>
+          </div>
+
+          <div className="mt-6 flex gap-3">
+            <button
+              onClick={() => setStep('globalDetails')}
+              className="flex-1 px-6 py-3 text-sm font-medium"
+              style={{ border: `1px solid ${R_BORDER}`, borderRadius: 2, backgroundColor: 'transparent', color: R_CREAM }}
+            >
+              ← Back
+            </button>
+            <button
+              onClick={() => canContinue && setStep('globalAssessment')}
+              className="flex-1 px-6 py-3 text-sm font-semibold"
+              style={{
+                backgroundColor: canContinue ? GOLD : 'rgba(184,144,42,0.35)',
+                borderRadius: 2,
+                cursor: canContinue ? 'pointer' : 'not-allowed',
+                color: canContinue ? R_BG : 'rgba(237,232,224,0.45)',
+              }}
+            >
+              Continue →
+            </button>
+          </div>
+        </main>
+      </div>
+    );
+  }
+
+  // ─── Global: CLEAR TRUST Assessment ────────────────────────────────────────
+
+  if (step === 'globalAssessment') {
+    return (
+      <div style={{ minHeight: '100vh', display: 'flex', flexDirection: 'column', backgroundColor: R_BG }}>
+        <header className="px-6 py-4 flex justify-between items-center max-w-6xl mx-auto w-full">
+          <NLLogo dark />
+          <StepIndicator current={4} total={5} dark />
+        </header>
+        <div style={{ height: 1, backgroundColor: 'rgba(184,144,42,0.15)' }} />
+        <div style={{ height: 2, background: `linear-gradient(90deg, ${NAVY} 0%, ${GOLD} 80%, ${NAVY} 100%)` }} />
+
+        <main className="flex-1 px-6 py-10 max-w-2xl mx-auto w-full">
+          <p className="text-xs font-semibold uppercase tracking-widest mb-2" style={{ color: GOLD }}>Global Snapshot · Step 4 of 5</p>
+          <h2 className="mb-1" style={{ fontFamily: 'var(--font-playfair)', color: R_CREAM, fontWeight: 700, fontSize: '1.75rem', lineHeight: 1.25 }}>
+            Ten quick questions
+          </h2>
+          <p className="mb-6" style={{ color: R_BODY }}>The same universal CLEAR TRUST framework, used for every jurisdiction.</p>
+
+          <div className="space-y-3">
+            {CLEAR_TRUST_DIMENSIONS.map((dim, i) => {
+              const answer = globalAnswers[dim.key];
+              const leftBorder = answer
+                ? answer === 'YES' ? '#16a34a' : answer === 'NO' ? '#dc2626' : '#d97706'
+                : NAVY;
+              return (
+                <div
+                  key={dim.key}
+                  className="p-5"
+                  style={{ backgroundColor: R_CARD, border: `1px solid ${R_BORDER}`, borderLeft: `3px solid ${leftBorder}`, borderRadius: 2 }}
+                >
+                  <div className="flex items-start gap-3 mb-4">
+                    <div className="flex items-center justify-center shrink-0 mt-0.5" style={{ width: 28, height: 28, backgroundColor: GOLD, borderRadius: 2 }}>
+                      <span style={{ color: R_BG, fontFamily: 'var(--font-playfair)', fontWeight: 700, fontSize: 14, lineHeight: 1 }}>{dim.letter}</span>
+                    </div>
+                    <div>
+                      <p className="text-xs font-semibold uppercase tracking-wide" style={{ color: GOLD }}>{dim.name} · Q{i + 1}</p>
+                      <p className="text-sm mt-0.5" style={{ color: R_CREAM }}>{GLOBAL_QUESTION_OVERRIDES[dim.key] ?? dim.question}</p>
+                    </div>
+                  </div>
+                  <div className="pl-10">
+                    <TriToggle value={answer} onChange={v => setGlobalAnswers(p => ({ ...p, [dim.key]: v }))} />
+                  </div>
+                </div>
+              );
+            })}
+          </div>
+
+          <div className="mt-8 flex gap-3">
+            <button
+              onClick={() => setStep('globalAiUse')}
+              className="flex-1 px-6 py-3 text-sm font-medium"
+              style={{ border: `1px solid ${R_BORDER}`, borderRadius: 2, backgroundColor: 'transparent', color: R_CREAM }}
+            >
+              ← Back
+            </button>
+            <button
+              onClick={() => globalAllAnswered && setStep('globalContext')}
+              className="flex-1 px-6 py-3 text-sm font-semibold"
+              style={{
+                backgroundColor: globalAllAnswered ? GOLD : 'rgba(184,144,42,0.35)',
+                borderRadius: 2,
+                cursor: globalAllAnswered ? 'pointer' : 'not-allowed',
+                color: globalAllAnswered ? R_BG : 'rgba(237,232,224,0.45)',
+              }}
+            >
+              Continue →
+            </button>
+          </div>
+          {!globalAllAnswered && (
+            <p className="text-center text-sm mt-3" style={{ color: R_MUTED }}>Please answer all questions to continue.</p>
+          )}
+        </main>
+      </div>
+    );
+  }
+
+  // ─── Global: Additional Context & Submit ───────────────────────────────────
+
+  if (step === 'globalContext') {
+    return (
+      <div style={{ minHeight: '100vh', display: 'flex', flexDirection: 'column', backgroundColor: R_BG }}>
+        <header className="px-6 py-4 flex justify-between items-center max-w-6xl mx-auto w-full">
+          <NLLogo dark />
+          <StepIndicator current={5} total={5} dark />
+        </header>
+        <div style={{ height: 1, backgroundColor: 'rgba(184,144,42,0.15)' }} />
+        <div style={{ height: 2, background: `linear-gradient(90deg, ${GOLD} 0%, ${NAVY} 100%)` }} />
+
+        <main className="flex-1 px-6 py-10 max-w-2xl mx-auto w-full">
+          <p className="text-xs font-semibold uppercase tracking-widest mb-2" style={{ color: GOLD }}>Global Snapshot · Step 5 of 5</p>
+          <h2 className="mb-1" style={{ fontFamily: 'var(--font-playfair)', color: R_CREAM, fontWeight: 700, fontSize: '1.75rem', lineHeight: 1.25 }}>
+            Almost there
+          </h2>
+          <p className="mb-8" style={{ color: R_BODY }}>A little more context helps us prepare a useful report.</p>
+
+          <div className="p-8 space-y-6" style={{ backgroundColor: R_CARD, border: `1px solid ${R_BORDER}`, borderRadius: 2 }}>
+            <div>
+              <Label className="text-sm font-medium block mb-1.5" style={{ color: R_BODY }}>
+                What is your biggest concern about AI in law? <span className="font-normal text-xs" style={{ color: R_MUTED }}>(optional)</span>
+              </Label>
+              <textarea
+                value={globalContext.biggestConcern}
+                onChange={e => setGlobalContext(p => ({ ...p, biggestConcern: e.target.value }))}
+                rows={3}
+                className="w-full text-sm p-3"
+                style={{ border: `1px solid ${R_BORDER}`, borderRadius: 2, backgroundColor: 'rgba(13,31,60,0.6)', color: R_CREAM }}
+              />
+            </div>
+            <div>
+              <Label className="text-sm font-medium block mb-1.5" style={{ color: R_BODY }}>
+                What would help most right now? <span className="font-normal text-xs" style={{ color: R_MUTED }}>(optional)</span>
+              </Label>
+              <textarea
+                value={globalContext.whatWouldHelpMost}
+                onChange={e => setGlobalContext(p => ({ ...p, whatWouldHelpMost: e.target.value }))}
+                rows={3}
+                className="w-full text-sm p-3"
+                style={{ border: `1px solid ${R_BORDER}`, borderRadius: 2, backgroundColor: 'rgba(13,31,60,0.6)', color: R_CREAM }}
+              />
+            </div>
+            <div>
+              <Label className="text-sm font-semibold block mb-2" style={{ color: R_CREAM }}>
+                May we contact you to discuss your results? <span style={{ color: GOLD }}>*</span>
+              </Label>
+              <div className="flex gap-2">
+                {YES_NO_OPTIONS.map(opt => (
+                  <button
+                    key={opt.value}
+                    type="button"
+                    onClick={() => setGlobalContext(p => ({ ...p, contactPermission: opt.value }))}
+                    className="flex-1 px-3 py-2.5 text-sm font-medium transition-colors"
+                    style={{
+                      border: `1px solid ${globalContext.contactPermission === opt.value ? GOLD : R_BORDER}`,
+                      borderRadius: 2,
+                      backgroundColor: globalContext.contactPermission === opt.value ? GOLD : 'rgba(13,31,60,0.4)',
+                      color: globalContext.contactPermission === opt.value ? R_BG : R_BODY,
+                    }}
+                  >
+                    {opt.label}
+                  </button>
+                ))}
+              </div>
+              {globalErrors.contactPermission && <p className="text-sm mt-1" style={{ color: '#f87171' }}>{globalErrors.contactPermission}</p>}
+            </div>
+
+            <div
+              className="p-5 text-sm leading-relaxed"
+              style={{ backgroundColor: 'rgba(184,144,42,0.08)', border: `1px solid ${R_BORDER}`, borderRadius: 2, color: R_BODY }}
+            >
+              <p className="font-semibold mb-2" style={{ color: GOLD }}>How your report is prepared</p>
+              <p>
+                We don&apos;t yet have a fully researched knowledge base for every jurisdiction, so unlike the UK Snapshot,
+                your report is <strong style={{ color: R_CREAM }}>not generated automatically</strong>. Our team will research the
+                regulations, bar guidance, and data-protection requirements that apply in your jurisdiction and prepare your
+                report by hand, delivered to your email within approximately 48 hours. This is general information only, not
+                legal or regulatory advice.
+              </p>
+            </div>
+
+            {globalSubmitError && (
+              <div className="p-4 text-sm" style={{ backgroundColor: 'rgba(248,113,113,0.10)', border: '1px solid rgba(248,113,113,0.30)', borderRadius: 2, color: '#f87171' }}>
+                {globalSubmitError}
+              </div>
+            )}
+          </div>
+
+          <div className="mt-6 flex gap-3">
+            <button
+              onClick={() => setStep('globalAssessment')}
+              className="flex-1 px-6 py-3 text-sm font-medium"
+              style={{ border: `1px solid ${R_BORDER}`, borderRadius: 2, backgroundColor: 'transparent', color: R_CREAM }}
+            >
+              ← Back
+            </button>
+            <button
+              onClick={handleGlobalSubmit}
+              className="flex-1 px-6 py-3 text-sm font-semibold transition-opacity hover:opacity-90"
+              style={{ backgroundColor: GOLD, color: R_BG, borderRadius: 2 }}
+            >
+              Submit My Assessment →
+            </button>
+          </div>
+        </main>
+      </div>
+    );
+  }
+
+  // ─── Global: Submitting ─────────────────────────────────────────────────────
+
+  if (step === 'globalSubmitting') {
+    return (
+      <div style={{ minHeight: '100vh', display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', backgroundColor: R_BG }}>
+        <div className="w-5 h-5 rounded-full border-2 border-t-transparent animate-spin mb-4" style={{ borderColor: GOLD, borderTopColor: 'transparent' }} />
+        <p style={{ color: R_CREAM }}>Sending your assessment…</p>
+      </div>
+    );
+  }
+
+  // ─── Global: Done ───────────────────────────────────────────────────────────
+
+  if (step === 'globalDone') {
+    return (
+      <div style={{ minHeight: '100vh', display: 'flex', flexDirection: 'column', backgroundColor: R_BG }}>
+        <header className="px-6 py-5 flex justify-center">
+          <NLLogo dark />
+        </header>
+        <div style={{ height: 2, background: `linear-gradient(90deg, ${NAVY} 0%, ${GOLD} 50%, ${NAVY} 100%)` }} />
+
+        <main className="flex-1 flex flex-col items-center justify-center px-6 py-16 text-center">
+          <div className="w-16 h-16 flex items-center justify-center mb-6" style={{ backgroundColor: 'rgba(184,144,42,0.15)', borderRadius: '50%' }}>
+            <span style={{ color: GOLD, fontSize: 28 }}>✓</span>
+          </div>
+          <h1 className="mb-3" style={{ fontFamily: 'var(--font-playfair)', color: R_CREAM, fontWeight: 700, fontSize: '1.75rem', maxWidth: '32rem' }}>
+            Thank you. Your assessment has been received.
+          </h1>
+          <p className="max-w-md" style={{ color: R_BODY, lineHeight: 1.7 }}>
+            Because jurisdiction-specific research is required, your personalised report will be prepared manually
+            and delivered to your email within approximately <strong style={{ color: R_CREAM }}>48 hours</strong>.
+          </p>
+          <button
+            onClick={() => setStep('landing')}
+            className="mt-8 px-6 py-3 text-sm font-medium"
+            style={{ border: `1px solid ${R_BORDER}`, borderRadius: 2, backgroundColor: 'transparent', color: R_CREAM }}
+          >
+            ← Back to home
+          </button>
         </main>
       </div>
     );

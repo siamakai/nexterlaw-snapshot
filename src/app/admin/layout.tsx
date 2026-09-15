@@ -9,6 +9,9 @@ export default function AdminLayout({ children }: { children: React.ReactNode })
           <Link href="/admin/submissions" className="hover:text-white/80 transition-colors">
             Submissions
           </Link>
+          <Link href="/admin/global-submissions" className="hover:text-white/80 transition-colors">
+            Global Submissions
+          </Link>
           <Link href="/admin/knowledge-base" className="hover:text-white/80 transition-colors">
             Knowledge Base
           </Link>

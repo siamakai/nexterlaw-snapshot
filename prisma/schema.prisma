@@ -350,6 +350,95 @@ model EmailLog {
 // ADMIN
 // ─────────────────────────────────────────────────────────────────────────────
 
+// ─────────────────────────────────────────────────────────────────────────────
+// GLOBAL / WORLDWIDE SNAPSHOT — manual-report pathway for non-UK jurisdictions
+//
+// Deliberately a separate model from Lead/Submission rather than nullable
+// columns bolted onto them: the UK flow is the live product and must not be
+// touched, and the two pathways don't share a workflow (UK is an automated
+// AI-generation pipeline; Global is a manual research + report process with
+// its own status lifecycle). Some field duplication (firm name, email, the
+// 10 CLEAR TRUST answers) is accepted as the cost of that isolation.
+//
+// No score is calculated or stored for Global submissions — see project
+// decision: any automated jurisdiction-specific score would misrepresent a
+// knowledge base that does not yet exist for most countries.
+// ─────────────────────────────────────────────────────────────────────────────
+
+enum ManualReportStatus {
+  PENDING
+  RESEARCHING
+  REPORT_READY
+  SENT
+}
+
+enum CurrentAiUsageAnswer {
+  YES
+  NOT_SURE
+  NO
+}
+
+model GlobalSubmission {
+  id String @id @default(cuid())
+
+  // Section 1 — Firm & contact information
+  contactName String
+  firmName    String
+  firmWebsite String?
+  workEmail   String
+  phone       String?
+
+  // Section 2 — Jurisdiction
+  country               String
+  stateProvince         String? // US state / Canadian province / Australian state-territory
+  secondaryStates       String[] // optional additional states/provinces
+  regulatoryBody        String? // free text, "other" countries only (e.g. "Law Society of Hong Kong")
+  secondaryJurisdiction String? // free text, optional (e.g. "Also licensed in England")
+
+  // Section 3 — Firm profile
+  firmSize                 String // label from GLOBAL_FIRM_SIZE_OPTIONS — separate taxonomy from UK's FirmSizeBand
+  primaryPracticeArea      String
+  primaryPracticeAreaOther String? // used when primaryPracticeArea === "other"
+  secondaryPracticeAreas   String[]
+
+  // Section 4 — Current AI use
+  currentlyUsingAi    CurrentAiUsageAnswer
+  aiToolsInUse        String?               @db.Text
+  hasAiPolicy         SelfAssessmentAnswer
+  clientsAskedAboutAi SelfAssessmentAnswer
+
+  // Section 5 — CLEAR TRUST self-assessment (same 10 universal dimensions as the UK flow)
+  answerCompliance      SelfAssessmentAnswer
+  answerLiteracy        SelfAssessmentAnswer
+  answerExplainability  SelfAssessmentAnswer
+  answerAccountability  SelfAssessmentAnswer
+  answerRights          SelfAssessmentAnswer
+  answerTransparency    SelfAssessmentAnswer
+  answerReliability     SelfAssessmentAnswer
+  answerUsageGovernance SelfAssessmentAnswer
+  answerSecurity        SelfAssessmentAnswer
+  answerTraceability    SelfAssessmentAnswer
+
+  // Section 6 — Additional context
+  biggestConcern    String?  @db.Text
+  whatWouldHelpMost String?  @db.Text
+  contactPermission Boolean  @default(false)
+  consentAt         DateTime?
+
+  // Internal manual-report workflow
+  status           ManualReportStatus @default(PENDING)
+  reportPreparedAt DateTime?
+  reportSentAt     DateTime?
+  internalNotes    String?            @db.Text
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  @@index([status])
+  @@index([country])
+  @@index([createdAt])
+}
+
 model AdminUser {
   id          String   @id @default(cuid())
   clerkUserId String   @unique

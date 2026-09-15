@@ -206,3 +206,78 @@ export async function sendDay7Email(opts: SendDay7Options) {
   if (error) throw new Error(`Resend error (Day 7): ${error.message}`);
   return data;
 }
+
+// ── Global Snapshot — internal team notification ──────────────────────────────
+// Unlike the Day 0/3/7 sequence above (sent TO the lead, from the async UK
+// generation pipeline), this is sent TO the NexterLaw team, synchronously,
+// whenever a Global/Worldwide submission comes in — there is no generation
+// pipeline for Global submissions to hang this off of.
+
+export interface GlobalSubmissionNotificationOptions {
+  submissionId: string;
+  contactName: string;
+  firmName: string;
+  workEmail: string;
+  country: string;
+  stateProvince: string;
+  primaryPracticeArea: string;
+}
+
+function globalNotificationHtml(opts: GlobalSubmissionNotificationOptions): string {
+  const adminLink = `${BASE_URL}/admin/global-submissions/${opts.submissionId}`;
+  const region = opts.stateProvince ? `, ${opts.stateProvince}` : '';
+  return `<!DOCTYPE html>
+<html lang="en">
+<head><meta charset="UTF-8"></head>
+<body style="margin:0;padding:0;background:#f4f6fb;font-family:Helvetica,Arial,sans-serif;">
+<table width="100%" cellpadding="0" cellspacing="0" style="background:#f4f6fb;padding:32px 0;">
+  <tr><td align="center">
+    <table width="560" cellpadding="0" cellspacing="0" style="background:#ffffff;border-radius:8px;overflow:hidden;border:1px solid #d1d9e6;">
+      <tr><td style="background:#1a3a6b;padding:24px 40px;">
+        <p style="margin:0;color:#ffffff;font-size:10px;letter-spacing:3px;text-transform:uppercase;opacity:0.7;">NexterLaw · Global Snapshot</p>
+        <h1 style="margin:8px 0 0;color:#ffffff;font-size:18px;font-weight:700;">New manual-report submission</h1>
+      </td></tr>
+      <tr><td style="padding:28px 40px;">
+        <table cellpadding="0" cellspacing="0" style="width:100%;font-size:13px;color:#374151;">
+          <tr><td style="padding:4px 0;color:#6b7280;width:130px;">Contact</td><td style="padding:4px 0;font-weight:600;">${opts.contactName}</td></tr>
+          <tr><td style="padding:4px 0;color:#6b7280;">Firm</td><td style="padding:4px 0;font-weight:600;">${opts.firmName}</td></tr>
+          <tr><td style="padding:4px 0;color:#6b7280;">Email</td><td style="padding:4px 0;">${opts.workEmail}</td></tr>
+          <tr><td style="padding:4px 0;color:#6b7280;">Country</td><td style="padding:4px 0;">${opts.country}${region}</td></tr>
+          <tr><td style="padding:4px 0;color:#6b7280;">Practice area</td><td style="padding:4px 0;">${opts.primaryPracticeArea}</td></tr>
+          <tr><td style="padding:4px 0;color:#6b7280;">Submission ID</td><td style="padding:4px 0;font-family:monospace;font-size:12px;">${opts.submissionId}</td></tr>
+        </table>
+        <p style="text-align:center;margin:24px 0 0;">
+          <a href="${adminLink}" style="display:inline-block;background:#1a3a6b;color:#ffffff;text-decoration:none;padding:12px 28px;border-radius:6px;font-size:13px;font-weight:600;">Open in Admin</a>
+        </p>
+      </td></tr>
+    </table>
+  </td></tr>
+</table>
+</body>
+</html>`;
+}
+
+export async function sendGlobalSubmissionNotification(opts: GlobalSubmissionNotificationOptions) {
+  // Comma-separated so more than one team inbox can be notified, e.g.
+  // "team@nexterai.agency,person@gmail.com".
+  const teamEmails = (process.env.TEAM_NOTIFICATION_EMAIL ?? '')
+    .split(',')
+    .map(e => e.trim())
+    .filter(Boolean);
+
+  if (teamEmails.length === 0) {
+    console.warn('[email] TEAM_NOTIFICATION_EMAIL not configured — skipping Global submission notification.');
+    return null;
+  }
+
+  const resend = new Resend(process.env.RESEND_API_KEY);
+  const { data, error } = await resend.emails.send({
+    from: FROM_ADDRESS,
+    to: teamEmails,
+    subject: `New Global Snapshot submission — ${opts.firmName} (${opts.country})`,
+    html: globalNotificationHtml(opts),
+  });
+
+  if (error) throw new Error(`Resend error (Global notification): ${error.message}`);
+  return data;
+}
