@@ -2257,8 +2257,8 @@ export default function Home() {
             Thank you. Your assessment has been received.
           </h1>
           <p className="max-w-md" style={{ color: R_BODY, lineHeight: 1.7 }}>
-            Because jurisdiction-specific research is required, your personalised report will be prepared manually
-            and delivered to your email within approximately <strong style={{ color: R_CREAM }}>48 hours</strong>.
+            Within approximately <strong style={{ color: R_CREAM }}>48 hours</strong>, your personalised AI Readiness
+            report will be ready and sent to your email.
           </p>
           <button
             onClick={() => setStep('landing')}

@@ -27,6 +27,13 @@ export default async function GlobalSubmissionsPage() {
     <div>
       <div className="flex items-center justify-between mb-6">
         <h1 className="text-xl font-bold text-gray-900">Global Submissions ({submissions.length})</h1>
+        {/* eslint-disable-next-line @next/next/no-html-link-for-pages -- file download, not a page navigation */}
+        <a
+          href="/api/admin/global-submissions/csv"
+          className="text-sm bg-[#1a3a6b] text-white px-4 py-2 rounded-md hover:bg-[#142e56] transition-colors"
+        >
+          Download CSV
+        </a>
       </div>
 
       <div className="overflow-x-auto rounded-lg border border-gray-200 bg-white shadow-sm">
