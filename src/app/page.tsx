@@ -1689,27 +1689,6 @@ export default function Home() {
                   <option value="">Select…</option>
                   {globalRegionOptions.map(r => <option key={r} value={r}>{r}</option>)}
                 </select>
-
-                <Label className="text-sm font-medium mt-4 mb-1.5 block" style={{ color: R_BODY }}>
-                  Other states/provinces <span className="font-normal text-xs" style={{ color: R_MUTED }}>(optional)</span>
-                </Label>
-                <div className="grid grid-cols-2 sm:grid-cols-3 gap-2 max-h-40 overflow-y-auto pr-1">
-                  {globalRegionOptions.filter(r => r !== globalJurisdiction.stateProvince).map(r => {
-                    const checked = globalJurisdiction.secondaryStates.includes(r);
-                    return (
-                      <label key={r} className="flex items-center gap-2 text-xs" style={{ color: checked ? GOLD : R_BODY }}>
-                        <Checkbox
-                          checked={checked}
-                          onCheckedChange={v => setGlobalJurisdiction(p => ({
-                            ...p,
-                            secondaryStates: v ? [...p.secondaryStates, r] : p.secondaryStates.filter(s => s !== r),
-                          }))}
-                        />
-                        {r}
-                      </label>
-                    );
-                  })}
-                </div>
               </div>
             )}
 
