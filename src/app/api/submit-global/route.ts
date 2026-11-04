@@ -1,6 +1,7 @@
 import { z } from 'zod';
 import { prisma } from '@/lib/db/prisma';
 import { sendGlobalSubmissionNotification } from '@/lib/email';
+import { checkRateLimit, getClientIp, tooManyRequests } from '@/lib/security/rate-limit';
 
 const AnswerEnum = z.enum(['YES', 'NO', 'NOT_SURE']);
 const YesNoEnum = z.enum(['YES', 'NO']);
@@ -52,6 +53,10 @@ const SubmitGlobalSchema = z.object({
 });
 
 export async function POST(request: Request) {
+  // Each submission emails the team, so limit spam by IP and by email.
+  const ipLimit = await checkRateLimit('submitGlobalIp', getClientIp(request));
+  if (!ipLimit.allowed) return tooManyRequests(ipLimit);
+
   let body: unknown;
   try {
     body = await request.json();
@@ -68,6 +73,9 @@ export async function POST(request: Request) {
   }
 
   const { contact, jurisdiction, firmProfile, currentAiUse, selfAssessment, additionalContext } = parsed.data;
+
+  const emailLimit = await checkRateLimit('submitGlobalEmail', contact.workEmail);
+  if (!emailLimit.allowed) return tooManyRequests(emailLimit);
 
   const submission = await prisma.globalSubmission.create({
     data: {

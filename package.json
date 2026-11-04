@@ -10,7 +10,9 @@
     "db:seed": "tsx --tsconfig tsconfig.json prisma/seed.ts",
     "db:push": "prisma db push",
     "db:migrate": "prisma migrate dev",
-    "db:studio": "prisma studio"
+    "db:studio": "prisma studio",
+    "test": "vitest run",
+    "typecheck": "next typegen && tsc --noEmit"
   },
   "prisma": {
     "seed": "tsx --tsconfig tsconfig.json prisma/seed.ts"
@@ -55,6 +57,7 @@
     "eslint-config-next": "16.2.10",
     "tailwindcss": "^4",
     "tsx": "^4.23.0",
-    "typescript": "^5"
+    "typescript": "^5",
+    "vitest": "^3.2.4"
   }
 }

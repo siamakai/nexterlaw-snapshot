@@ -1,3 +1,4 @@
+import { requireAdminApi } from '@/lib/security/admin-auth';
 import { z } from 'zod';
 import { prisma } from '@/lib/db/prisma';
 import type { FirmSizeBand } from '@prisma/client';
@@ -16,6 +17,9 @@ const KBSchema = z.object({
 });
 
 export async function GET() {
+  const denied = await requireAdminApi();
+  if (denied) return denied;
+
   const entries = await prisma.knowledgeBaseEntry.findMany({
     orderBy: [{ category: 'asc' }, { weight: 'desc' }],
     take: 500,
@@ -25,6 +29,9 @@ export async function GET() {
 }
 
 export async function POST(request: Request) {
+  const denied = await requireAdminApi();
+  if (denied) return denied;
+
   let body: unknown;
   try { body = await request.json(); } catch { return Response.json({ error: 'Invalid JSON' }, { status: 400 }); }
 

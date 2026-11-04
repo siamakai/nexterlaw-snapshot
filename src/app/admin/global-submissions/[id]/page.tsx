@@ -1,3 +1,4 @@
+import { requireAdminPage } from '@/lib/security/admin-auth';
 import { prisma } from '@/lib/db/prisma';
 import Link from 'next/link';
 import { notFound } from 'next/navigation';
@@ -52,6 +53,7 @@ export default async function GlobalSubmissionDetailPage({
 }: {
   params: Promise<{ id: string }>;
 }) {
+  await requireAdminPage();
   const { id } = await params;
   const s = await getSubmission(id);
   if (!s) notFound();

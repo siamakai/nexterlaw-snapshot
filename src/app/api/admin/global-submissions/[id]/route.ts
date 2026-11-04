@@ -1,3 +1,4 @@
+import { requireAdminApi } from '@/lib/security/admin-auth';
 import { z } from 'zod';
 import { prisma } from '@/lib/db/prisma';
 
@@ -7,6 +8,9 @@ const PatchSchema = z.object({
 });
 
 export async function GET(_req: Request, ctx: RouteContext<'/api/admin/global-submissions/[id]'>) {
+  const denied = await requireAdminApi();
+  if (denied) return denied;
+
   const { id } = await ctx.params;
 
   const submission = await prisma.globalSubmission.findUnique({ where: { id } });
@@ -16,6 +20,9 @@ export async function GET(_req: Request, ctx: RouteContext<'/api/admin/global-su
 }
 
 export async function PATCH(request: Request, ctx: RouteContext<'/api/admin/global-submissions/[id]'>) {
+  const denied = await requireAdminApi();
+  if (denied) return denied;
+
   const { id } = await ctx.params;
 
   let body: unknown;

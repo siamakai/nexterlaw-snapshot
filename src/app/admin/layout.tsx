@@ -1,6 +1,8 @@
+import { requireAdminPage } from '@/lib/security/admin-auth';
 import Link from 'next/link';
 
-export default function AdminLayout({ children }: { children: React.ReactNode }) {
+export default async function AdminLayout({ children }: { children: React.ReactNode }) {
+  await requireAdminPage();
   return (
     <div className="min-h-screen bg-gray-50">
       <nav className="bg-[#1a3a6b] text-white px-6 py-3 flex items-center gap-6">

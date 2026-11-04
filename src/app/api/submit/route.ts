@@ -2,6 +2,8 @@ import { after } from 'next/server';
 import { z } from 'zod';
 import { prisma } from '@/lib/db/prisma';
 import { runGenerationPipeline } from '@/lib/pipeline';
+import { checkRateLimit, getClientIp, tooManyRequests } from '@/lib/security/rate-limit';
+import { generateResultToken } from '@/lib/security/tokens';
 
 const AnswerEnum = z.enum(['YES', 'NO', 'NOT_SURE']);
 
@@ -32,6 +34,12 @@ const SubmitSchema = z.object({
 });
 
 export async function POST(request: Request) {
+  // Every accepted submission starts a paid AI generation, so limit by IP
+  // before doing any work, and by email once we know it.
+  const ip = getClientIp(request);
+  const ipLimit = await checkRateLimit('submitIp', ip);
+  if (!ipLimit.allowed) return tooManyRequests(ipLimit);
+
   let body: unknown;
   try {
     body = await request.json();
@@ -48,6 +56,9 @@ export async function POST(request: Request) {
   }
 
   const { intake, selfAssessment } = parsed.data;
+
+  const emailLimit = await checkRateLimit('submitEmail', intake.workEmail);
+  if (!emailLimit.allowed) return tooManyRequests(emailLimit);
 
   // Upsert Lead by email — most recent record wins
   let lead = await prisma.lead.findFirst({
@@ -84,6 +95,7 @@ export async function POST(request: Request) {
   const submission = await prisma.submission.create({
     data: {
       leadId: lead.id,
+      resultToken: generateResultToken(),
       practiceTypes: intake.practiceTypes,
       firmSize: intake.firmSize,
       euFacing: intake.euFacing,
@@ -101,23 +113,29 @@ export async function POST(request: Request) {
     },
   });
 
-  // Trigger background generation.
-  // On Netlify: URL env var is set automatically → calls the 15-min background function.
-  // In local dev (no URL set): falls back to in-process execution via after().
+  // Trigger generation.
+  // Production runs on Vercel, which doesn't set URL, so the after() branch is
+  // what runs live (vercel.json gives this route 300 s).
+  // The Netlify background function is only used when both URL and its shared
+  // secret are set; it refuses calls without the secret.
   const netlifyUrl = process.env.URL;
-  if (netlifyUrl) {
-    // Fire-and-forget: Netlify immediately returns 202 before the function runs.
-    fetch(`${netlifyUrl}/.netlify/functions/generate-report-background`, {
+  const backgroundSecret = process.env.BACKGROUND_FUNCTION_SECRET;
+  if (netlifyUrl && backgroundSecret) {
+    // Netlify returns 202 immediately for background functions, so awaiting is cheap
+    // and makes sure the trigger isn't dropped when this function returns.
+    await fetch(`${netlifyUrl}/.netlify/functions/generate-report-background`, {
       method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
+      headers: { 'Content-Type': 'application/json', 'x-background-secret': backgroundSecret },
       body: JSON.stringify({ submissionId: submission.id }),
     }).catch(err => console.error('[submit] Failed to trigger background fn:', err));
   } else {
-    // Local dev fallback
     after(async () => {
       await runGenerationPipeline(submission.id);
     });
   }
 
-  return Response.json({ submissionId: submission.id, status: 'PENDING' }, { status: 202 });
+  return Response.json(
+    { submissionId: submission.id, resultToken: submission.resultToken, status: 'PENDING' },
+    { status: 202 },
+  );
 }

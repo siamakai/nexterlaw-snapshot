@@ -1,6 +1,10 @@
+import { requireAdminApi } from '@/lib/security/admin-auth';
 import { prisma } from '@/lib/db/prisma';
 
 export async function GET() {
+  const denied = await requireAdminApi();
+  if (denied) return denied;
+
 
   const submissions = await prisma.submission.findMany({
     orderBy: { createdAt: 'desc' },

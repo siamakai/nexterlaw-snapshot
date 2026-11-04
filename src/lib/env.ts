@@ -17,6 +17,8 @@ const envSchema = z.object({
   // existing deployments don't break before this is configured — if unset, the
   // notification is skipped and logged rather than failing the submission.
   TEAM_NOTIFICATION_EMAIL: z.string().email().optional(),
+  // Shared secret for the Netlify background function (only relevant on Netlify).
+  BACKGROUND_FUNCTION_SECRET: z.string().min(32).optional(),
   GHL_WEBHOOK_URL: z.string().url().optional(),
   GHL_API_KEY: z.string().optional(),
   NODE_ENV: z.enum(["development", "production", "test"]).default("development"),

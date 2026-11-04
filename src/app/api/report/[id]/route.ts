@@ -1,5 +1,6 @@
 import type { NextRequest } from 'next/server';
 import { prisma } from '@/lib/db/prisma';
+import { pdfPathFor, resolveReportRef } from '@/lib/security/report-access';
 import type {
   ReportStatusResponse,
   GeneratedReportContent,
@@ -53,11 +54,15 @@ function rebuildReport(r: GeneratedReport): GeneratedReportContent {
   };
 }
 
-export async function GET(_req: NextRequest, ctx: RouteContext<'/api/report/[id]'>) {
-  const { id } = await ctx.params;
+export async function GET(req: NextRequest, ctx: RouteContext<'/api/report/[id]'>) {
+  // [id] is the result token (new links) or the raw submission id (old emails).
+  const { id: ref } = await ctx.params;
+
+  const access = await resolveReportRef(req, ref, 'status');
+  if (!access.ok) return access.response;
 
   const submission = await prisma.submission.findUnique({
-    where: { id },
+    where: access.where,
     include: { report: true },
   });
 
@@ -65,15 +70,16 @@ export async function GET(_req: NextRequest, ctx: RouteContext<'/api/report/[id]
     return Response.json({ error: 'Not found' }, { status: 404 });
   }
 
+  // Never send internal error text to the browser; it stays in failureReason.
   const response: ReportStatusResponse = {
     status: submission.status,
-    ...(submission.failureReason ? { error: submission.failureReason } : {}),
+    ...(submission.status === 'FAILED' ? { error: 'Report generation failed.' } : {}),
   };
 
   if (submission.status === 'COMPLETE' && submission.report) {
     response.scores = rebuildScores(submission);
     response.report = rebuildReport(submission.report);
-    if (submission.pdfUrl) response.pdfUrl = submission.pdfUrl;
+    response.pdfUrl = pdfPathFor(submission);
   }
 
   return Response.json(response);

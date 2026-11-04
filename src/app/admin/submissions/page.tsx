@@ -1,3 +1,4 @@
+import { requireAdminPage } from '@/lib/security/admin-auth';
 import { prisma } from '@/lib/db/prisma';
 import Link from 'next/link';
 
@@ -17,6 +18,7 @@ const STATUS_COLOUR: Record<string, string> = {
 };
 
 export default async function SubmissionsPage() {
+  await requireAdminPage();
   const submissions = await prisma.submission.findMany({
     orderBy: { createdAt: 'desc' },
     take: 200,

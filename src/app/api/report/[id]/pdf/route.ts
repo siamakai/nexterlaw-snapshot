@@ -2,6 +2,7 @@ import type { NextRequest } from 'next/server';
 import React from 'react';
 import { renderToBuffer } from '@react-pdf/renderer';
 import { prisma } from '@/lib/db/prisma';
+import { resolveReportRef } from '@/lib/security/report-access';
 import { ReportPdf } from '@/lib/pdf-template';
 import type { GeneratedReportContent, ClearTrustScores, DimensionScore } from '@/types';
 import type { Submission, GeneratedReport } from '@prisma/client';
@@ -49,11 +50,15 @@ function buildContent(r: GeneratedReport): GeneratedReportContent {
   };
 }
 
-export async function GET(_req: NextRequest, ctx: RouteContext<'/api/report/[id]/pdf'>) {
-  const { id } = await ctx.params;
+export async function GET(req: NextRequest, ctx: RouteContext<'/api/report/[id]/pdf'>) {
+  // [id] is the result token (new links) or the raw submission id (old emails).
+  const { id: ref } = await ctx.params;
+
+  const access = await resolveReportRef(req, ref, 'pdf');
+  if (!access.ok) return access.response;
 
   const submission = await prisma.submission.findUnique({
-    where: { id },
+    where: access.where,
     include: { report: true },
   });
 

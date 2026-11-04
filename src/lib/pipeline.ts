@@ -4,6 +4,7 @@ import { retrieveKnowledgeBaseEntries } from './knowledge-retrieval';
 import { generateReport } from './report-generator';
 import { sendDay0Email } from './email';
 import { appendUsageRow } from './google-sheets';
+import { pdfPathFor } from './security/report-access';
 import type { SelfAssessmentAnswers, IntakeData } from '@/types';
 
 function extractErrorMessage(err: unknown): string {
@@ -27,6 +28,20 @@ function extractErrorMessage(err: unknown): string {
 export async function runGenerationPipeline(submissionId: string): Promise<void> {
   const startTime = Date.now();
 
+  // ── 0. Claim the submission ─────────────────────────────────────────────────
+  // Atomically move PENDING → SCORING. If nothing was claimed, another run has
+  // already started or finished this submission: do nothing, so a repeated
+  // trigger can never pay for a second AI generation or overwrite a finished
+  // report. (This runs outside the try so a skipped run never marks it FAILED.)
+  const claimed = await prisma.submission.updateMany({
+    where: { id: submissionId, status: 'PENDING' },
+    data: { status: 'SCORING' },
+  });
+  if (claimed.count === 0) {
+    console.warn(`[pipeline] Submission ${submissionId} is not PENDING; skipping duplicate run.`);
+    return;
+  }
+
   try {
     const submission = await prisma.submission.findUniqueOrThrow({
       where: { id: submissionId },
@@ -34,10 +49,6 @@ export async function runGenerationPipeline(submissionId: string): Promise<void>
     });
 
     // ── 1. Scoring ───────────────────────────────────────────────────────────
-    await prisma.submission.update({
-      where: { id: submissionId },
-      data: { status: 'SCORING' },
-    });
 
     const answers: SelfAssessmentAnswers = {
       compliance: submission.answerCompliance,
@@ -144,7 +155,8 @@ export async function runGenerationPipeline(submissionId: string): Promise<void>
       },
     });
 
-    const pdfUrl = `/api/report/${submissionId}/pdf`;
+    // Token-based link, so emails no longer expose the submission id.
+    const pdfUrl = pdfPathFor(submission);
 
     await prisma.submission.update({
       where: { id: submissionId },

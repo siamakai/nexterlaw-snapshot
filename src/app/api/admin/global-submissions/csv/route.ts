@@ -1,3 +1,4 @@
+import { requireAdminApi } from '@/lib/security/admin-auth';
 import { prisma } from '@/lib/db/prisma';
 
 function csvField(v: string | null | undefined): string {
@@ -6,6 +7,9 @@ function csvField(v: string | null | undefined): string {
 }
 
 export async function GET() {
+  const denied = await requireAdminApi();
+  if (denied) return denied;
+
   const submissions = await prisma.globalSubmission.findMany({
     orderBy: { createdAt: 'desc' },
   });

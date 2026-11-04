@@ -1,5 +1,6 @@
 import { Resend } from 'resend';
 import type { ClearTrustScores } from '@/types';
+import { escapeHtml } from '@/lib/security/tokens';
 
 const FROM_ADDRESS = 'NexterLaw <no-reply@nexterlaw.com>';
 const BASE_URL = process.env.NEXT_PUBLIC_APP_URL ?? 'https://snapshot.nexterlaw.com';
@@ -28,9 +29,9 @@ function day0Html(opts: {
         <h1 style="margin:12px 0 0;color:#ffffff;font-size:22px;font-weight:700;line-height:1.3;">Your AI Readiness Report is ready</h1>
       </td></tr>
       <tr><td style="padding:32px 40px;">
-        <p style="color:#4b5563;font-size:14px;line-height:1.6;margin:0 0 20px;">Dear ${opts.contactName},</p>
+        <p style="color:#4b5563;font-size:14px;line-height:1.6;margin:0 0 20px;">Dear ${escapeHtml(opts.contactName)},</p>
         <p style="color:#4b5563;font-size:14px;line-height:1.6;margin:0 0 24px;">
-          Thank you for completing the NexterLaw CLEAR TRUST AI Readiness Snapshot for <strong>${opts.firmName}</strong>.
+          Thank you for completing the NexterLaw CLEAR TRUST AI Readiness Snapshot for <strong>${escapeHtml(opts.firmName)}</strong>.
           Your report has been generated and is ready for download.
         </p>
         <table cellpadding="0" cellspacing="0" style="background:#f4f6fb;border-radius:6px;padding:20px 24px;margin:0 0 24px;border-left:4px solid ${opts.bandColour};">
@@ -77,9 +78,9 @@ function day3Html(opts: { firmName: string; contactName: string; submissionId: s
         <p style="margin:0;color:#ffffff;font-size:10px;letter-spacing:3px;text-transform:uppercase;opacity:0.7;">NexterLaw</p>
       </td></tr>
       <tr><td style="padding:32px 40px;">
-        <p style="color:#4b5563;font-size:14px;line-height:1.6;margin:0 0 16px;">Dear ${opts.contactName},</p>
+        <p style="color:#4b5563;font-size:14px;line-height:1.6;margin:0 0 16px;">Dear ${escapeHtml(opts.contactName)},</p>
         <p style="color:#4b5563;font-size:14px;line-height:1.6;margin:0 0 16px;">
-          Three days ago you received your CLEAR TRUST AI Readiness Report for <strong>${opts.firmName}</strong>. We hope it has given you a clear picture of where your firm stands on AI governance.
+          Three days ago you received your CLEAR TRUST AI Readiness Report for <strong>${escapeHtml(opts.firmName)}</strong>. We hope it has given you a clear picture of where your firm stands on AI governance.
         </p>
         <p style="color:#4b5563;font-size:14px;line-height:1.6;margin:0 0 24px;">
           If you haven't had the opportunity to review it yet, your report is still available:
@@ -114,9 +115,9 @@ function day7Html(opts: { firmName: string; contactName: string }): string {
         <p style="margin:0;color:#ffffff;font-size:10px;letter-spacing:3px;text-transform:uppercase;opacity:0.7;">NexterLaw</p>
       </td></tr>
       <tr><td style="padding:32px 40px;">
-        <p style="color:#4b5563;font-size:14px;line-height:1.6;margin:0 0 16px;">Dear ${opts.contactName},</p>
+        <p style="color:#4b5563;font-size:14px;line-height:1.6;margin:0 0 16px;">Dear ${escapeHtml(opts.contactName)},</p>
         <p style="color:#4b5563;font-size:14px;line-height:1.6;margin:0 0 16px;">
-          One week has passed since your AI Readiness Snapshot for <strong>${opts.firmName}</strong>. Law firms that act on their governance gaps now are better positioned as regulators and clients increase their scrutiny of AI use.
+          One week has passed since your AI Readiness Snapshot for <strong>${escapeHtml(opts.firmName)}</strong>. Law firms that act on their governance gaps now are better positioned as regulators and clients increase their scrutiny of AI use.
         </p>
         <p style="color:#4b5563;font-size:14px;line-height:1.6;margin:0 0 24px;">
           NexterLaw offers a structured AI Governance Programme that builds directly on your CLEAR TRUST score — turning the report's recommendations into a documented policy framework, staff training, and ongoing compliance monitoring.
@@ -225,7 +226,8 @@ export interface GlobalSubmissionNotificationOptions {
 
 function globalNotificationHtml(opts: GlobalSubmissionNotificationOptions): string {
   const adminLink = `${BASE_URL}/admin/global-submissions/${opts.submissionId}`;
-  const region = opts.stateProvince ? `, ${opts.stateProvince}` : '';
+  // Everything below comes from a public form: escape it before putting it in HTML.
+  const region = opts.stateProvince ? `, ${escapeHtml(opts.stateProvince)}` : '';
   return `<!DOCTYPE html>
 <html lang="en">
 <head><meta charset="UTF-8"></head>
@@ -239,11 +241,11 @@ function globalNotificationHtml(opts: GlobalSubmissionNotificationOptions): stri
       </td></tr>
       <tr><td style="padding:28px 40px;">
         <table cellpadding="0" cellspacing="0" style="width:100%;font-size:13px;color:#374151;">
-          <tr><td style="padding:4px 0;color:#6b7280;width:130px;">Contact</td><td style="padding:4px 0;font-weight:600;">${opts.contactName}</td></tr>
-          <tr><td style="padding:4px 0;color:#6b7280;">Firm</td><td style="padding:4px 0;font-weight:600;">${opts.firmName}</td></tr>
-          <tr><td style="padding:4px 0;color:#6b7280;">Email</td><td style="padding:4px 0;">${opts.workEmail}</td></tr>
-          <tr><td style="padding:4px 0;color:#6b7280;">Country</td><td style="padding:4px 0;">${opts.country}${region}</td></tr>
-          <tr><td style="padding:4px 0;color:#6b7280;">Practice area</td><td style="padding:4px 0;">${opts.primaryPracticeArea}</td></tr>
+          <tr><td style="padding:4px 0;color:#6b7280;width:130px;">Contact</td><td style="padding:4px 0;font-weight:600;">${escapeHtml(opts.contactName)}</td></tr>
+          <tr><td style="padding:4px 0;color:#6b7280;">Firm</td><td style="padding:4px 0;font-weight:600;">${escapeHtml(opts.firmName)}</td></tr>
+          <tr><td style="padding:4px 0;color:#6b7280;">Email</td><td style="padding:4px 0;">${escapeHtml(opts.workEmail)}</td></tr>
+          <tr><td style="padding:4px 0;color:#6b7280;">Country</td><td style="padding:4px 0;">${escapeHtml(opts.country)}${region}</td></tr>
+          <tr><td style="padding:4px 0;color:#6b7280;">Practice area</td><td style="padding:4px 0;">${escapeHtml(opts.primaryPracticeArea)}</td></tr>
           <tr><td style="padding:4px 0;color:#6b7280;">Submission ID</td><td style="padding:4px 0;font-family:monospace;font-size:12px;">${opts.submissionId}</td></tr>
         </table>
         <p style="text-align:center;margin:24px 0 0;">

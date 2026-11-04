@@ -438,14 +438,23 @@ export default function Home() {
         throw new Error((body as { error?: string }).error ?? 'Submission failed. Please try again.');
       }
 
-      const data: { submissionId: string } = await res.json();
+      const data: { submissionId: string; resultToken?: string | null } = await res.json();
       setSubmissionId(data.submissionId);
+      // Poll by the unguessable token; fall back to the id only if the server didn't send one.
+      const reportRef = data.resultToken ?? data.submissionId;
 
       let progress = 20;
+      // Brief network or rate-limit hiccups shouldn't send the user back to
+      // resubmit (each resubmission is a new paid report): keep polling, and
+      // only give up after several failures in a row.
+      let consecutiveErrors = 0;
+      const MAX_CONSECUTIVE_ERRORS = 5;
       const poll = async () => {
         try {
-          const r = await fetch(`/api/report/${data.submissionId}`);
+          const r = await fetch(`/api/report/${reportRef}`);
+          if (r.status === 429 || r.status >= 500) throw new Error(`Status check returned ${r.status}`);
           const status: ReportStatusResponse = await r.json();
+          consecutiveErrors = 0;
           progress = Math.min(progress + 15, 90);
           setPollProgress(progress);
           if (status.status === 'COMPLETE') {
@@ -459,7 +468,12 @@ export default function Home() {
             setTimeout(poll, 3000);
           }
         } catch {
-          setSubmitError('Network error while checking report status. Please try again.');
+          consecutiveErrors += 1;
+          if (consecutiveErrors < MAX_CONSECUTIVE_ERRORS) {
+            setTimeout(poll, 3000 * consecutiveErrors);
+            return;
+          }
+          setSubmitError('We couldn’t check on your report just now. It is still being prepared and will arrive by email. If it doesn’t arrive within the hour, contact hello@nexterlaw.com.');
           setStep('consent');
         }
       };

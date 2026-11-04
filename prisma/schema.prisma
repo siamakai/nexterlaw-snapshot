@@ -145,6 +145,10 @@ model Submission {
   failureReason  String?
   retryCount     Int              @default(0)
 
+  // Unguessable token used in report/PDF links instead of the id (Phase 1 hotfix).
+  // Nullable so submissions made before the change keep working via their id.
+  resultToken    String?          @unique
+
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
 
