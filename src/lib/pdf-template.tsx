@@ -5,10 +5,14 @@ import {
   Text,
   View,
   StyleSheet,
-  Line,
-  Svg,
+  Link,
 } from '@react-pdf/renderer';
 import type { GeneratedReportContent, ClearTrustScores } from '@/types';
+import type { ResolvedNextStep } from '@/config/next-steps';
+import { regulatoryLabels } from './report-data';
+import { CLEAR_TRUST_DIMENSIONS } from './constants';
+
+const UNKNOWN_GREY = '#9ca3af';
 
 // ── Brand tokens ──────────────────────────────────────────────────────────────
 const NAVY  = '#1a3a6b';
@@ -192,7 +196,9 @@ const S = StyleSheet.create({
   upsellEyebrow: { fontSize: 8, color: GOLD, letterSpacing: 2.5, textTransform: 'uppercase', marginBottom: 8, fontFamily: 'Helvetica-Bold' },
   upsellTitle: { fontFamily: 'Times-Bold', fontSize: 16, color: WHITE, marginBottom: 10 },
   upsellBody: { fontSize: 9.5, color: WHITE, opacity: 0.85, lineHeight: 1.65, marginBottom: 16 },
-  upsellUrl: { fontSize: 9, color: GOLD, fontFamily: 'Helvetica-Bold' },
+  upsellUrl: { fontSize: 9, color: GOLD, fontFamily: 'Helvetica-Bold', textDecoration: 'none', marginTop: 8 },
+  upsellButton: { fontSize: 10, color: NAVY, backgroundColor: GOLD, fontFamily: 'Helvetica-Bold', padding: 8, textDecoration: 'none', marginBottom: 6 },
+  upsellLinkDark: { fontSize: 9, color: NAVY, fontFamily: 'Helvetica-Bold', textDecoration: 'none', marginTop: 4 },
   upsellGoldLine: { height: 1, backgroundColor: GOLD, opacity: 0.4, marginBottom: 14 },
 
   // ── Footer ─────────────────────────────────────────────────────────────────
@@ -304,11 +310,12 @@ function ScorePage({
       <View wrap={false}>
         <Text style={S.h2}>Dimension Breakdown</Text>
         {scores.dimensions.map(d => {
-          const fill = scoreBarColor(d.score);
+          // "Not sure" is uncertainty, not a gap: grey and labelled Unknown.
+          const fill = d.answer === 'NOT_SURE' ? UNKNOWN_GREY : scoreBarColor(d.score);
           return (
             <View key={d.key} style={S.scoreRow}>
               <Text style={S.scoreLetter}>{d.letter}</Text>
-              <Text style={S.scoreName}>{d.name}</Text>
+              <Text style={S.scoreName}>{d.name}{d.answer === 'NOT_SURE' ? ' (Unknown)' : ''}</Text>
               <View style={S.scoreBar}>
                 <View style={[S.scoreBarFill, { width: `${d.score}%` as unknown as number, backgroundColor: fill }]} />
               </View>
@@ -325,15 +332,23 @@ function ScorePage({
 
 // ── Regulatory map page ───────────────────────────────────────────────────────
 
-function RegulatoryMapPage({ content }: { content: GeneratedReportContent }) {
+function RegulatoryMapPage({ content, path }: { content: GeneratedReportContent; path: 'UK' | 'GLOBAL' }) {
+  const ukLabels = {
+    sra: 'SRA Code of Conduct & AI Governance',
+    ukGdpr: 'UK GDPR & Data Protection Act 2018',
+    pii: 'Professional Indemnity Insurance',
+    clientProcurement: 'Client Procurement & ESG Due Diligence',
+    euAiAct: 'EU AI Act',
+  };
+  const labels = path === 'UK' ? ukLabels : regulatoryLabels('GLOBAL');
   const sections: { label: string; key: keyof typeof content.regulatoryMap }[] = [
-    { label: 'SRA Code of Conduct & AI Governance', key: 'sra' },
-    { label: 'UK GDPR & Data Protection Act 2018', key: 'ukGdpr' },
-    { label: 'Professional Indemnity Insurance', key: 'pii' },
-    { label: 'Client Procurement & ESG Due Diligence', key: 'clientProcurement' },
+    { label: labels.sra, key: 'sra' },
+    { label: labels.ukGdpr, key: 'ukGdpr' },
+    { label: labels.pii, key: 'pii' },
+    { label: labels.clientProcurement, key: 'clientProcurement' },
   ];
   if (content.regulatoryMap.euAiAct) {
-    sections.push({ label: 'EU AI Act', key: 'euAiAct' });
+    sections.push({ label: labels.euAiAct, key: 'euAiAct' });
   }
 
   return (
@@ -420,19 +435,86 @@ function ExposuresPage({ content }: { content: GeneratedReportContent }) {
   );
 }
 
-// ── Upsell page ───────────────────────────────────────────────────────────────
+// ── Quick wins, intake and 90-day plan (v2) ─────────────────────────────────────
 
-function UpsellPage({ content }: { content: GeneratedReportContent }) {
+function ActionPlanPage({
+  content,
+  planLinks,
+}: {
+  content: GeneratedReportContent;
+  planLinks: Record<string, { title: string; href: string }>;
+}) {
+  const dimName = (key: string) => CLEAR_TRUST_DIMENSIONS.find(d => d.key === key)?.name ?? key;
   return (
     <Page size="A4" style={S.page}>
-      <SectionHeader title="NEXT STEPS WITH NEXTERLAW" />
+      <SectionHeader title="YOUR ACTION PLAN" />
+
+      {content.quickWins?.length ? (
+        <View>
+          <Text style={S.h2}>Three quick wins</Text>
+          {content.quickWins.map((w, i) => (
+            <View key={i} style={S.card} wrap={false}>
+              <Text style={S.cardNum}>{i + 1}</Text>
+              <Text style={S.cardTitle}>{w.title}</Text>
+              <Text style={S.cardBody}>{w.action}</Text>
+              <Text style={S.cardTag}>Dimension: {dimName(w.dimension)}</Text>
+            </View>
+          ))}
+        </View>
+      ) : null}
+
+      {content.intakeNote ? (
+        <View wrap={false}>
+          <Text style={S.h2}>Client intake</Text>
+          <Text style={S.body}>{content.intakeNote}</Text>
+        </View>
+      ) : null}
+
+      {content.plan90Day?.length ? (
+        <View>
+          <Text style={S.h2}>Your 90-day plan</Text>
+          {content.plan90Day.map((step, i) => {
+            const link = planLinks[step.resourceId];
+            return (
+              <View key={i} style={S.card} wrap={false}>
+                <Text style={S.cardTag}>{step.window}</Text>
+                <Text style={S.cardTitle}>{step.title}</Text>
+                <Text style={S.cardBody}>{step.action}</Text>
+                {link ? (
+                  <Link src={link.href} style={S.upsellLinkDark}>{link.title} →</Link>
+                ) : null}
+              </View>
+            );
+          })}
+        </View>
+      ) : null}
+
+      <Footer firmName={content.cover.firmName} />
+    </Page>
+  );
+}
+
+// ── Next step page (same block as the results page, with clickable links) ───────
+
+function NextStepPage({ content, nextStep }: { content: GeneratedReportContent; nextStep: ResolvedNextStep | null }) {
+  return (
+    <Page size="A4" style={S.page}>
+      <SectionHeader title="YOUR NEXT STEP" />
 
       <View style={S.upsellBox}>
-        <Text style={S.upsellEyebrow}>Ready for the full picture?</Text>
+        <Text style={S.upsellEyebrow}>Your next step</Text>
         <View style={S.upsellGoldLine} />
-        <Text style={S.upsellTitle}>Strengthen Your AI Governance</Text>
+        <Text style={S.upsellTitle}>{nextStep ? nextStep.main.label : 'Strengthen Your AI Governance'}</Text>
         <Text style={S.upsellBody}>{content.upsell}</Text>
-        <Text style={S.upsellUrl}>nexterlaw.com</Text>
+        {nextStep?.note ? <Text style={S.upsellBody}>{nextStep.note}</Text> : null}
+        {nextStep ? (
+          <View>
+            <Link src={nextStep.main.href} style={S.upsellButton}>{nextStep.main.label} →</Link>
+            <Link src={nextStep.secondary.href} style={S.upsellUrl}>{nextStep.secondary.label} →</Link>
+          </View>
+        ) : (
+          <Link src="https://nexterlaw.com" style={S.upsellUrl}>nexterlaw.com</Link>
+        )}
       </View>
 
       <Footer firmName={content.cover.firmName} />
@@ -445,9 +527,12 @@ function UpsellPage({ content }: { content: GeneratedReportContent }) {
 export interface ReportPdfProps {
   content: GeneratedReportContent;
   scores: ClearTrustScores;
+  nextStep?: ResolvedNextStep | null;
+  planLinks?: Record<string, { title: string; href: string }>;
+  path?: 'UK' | 'GLOBAL';
 }
 
-export function ReportPdf({ content, scores }: ReportPdfProps) {
+export function ReportPdf({ content, scores, nextStep = null, planLinks = {}, path = 'UK' }: ReportPdfProps) {
   return (
     <Document
       title={`AI Readiness Report — ${content.cover.firmName}`}
@@ -457,11 +542,14 @@ export function ReportPdf({ content, scores }: ReportPdfProps) {
     >
       <CoverPage content={content} scores={scores} />
       <ScorePage content={content} scores={scores} />
-      <RegulatoryMapPage content={content} />
+      <RegulatoryMapPage content={content} path={path} />
       <ShadowAiPage content={content} />
       <OpportunitiesPage content={content} />
       <ExposuresPage content={content} />
-      <UpsellPage content={content} />
+      {content.quickWins?.length || content.plan90Day?.length || content.intakeNote ? (
+        <ActionPlanPage content={content} planLinks={planLinks} />
+      ) : null}
+      <NextStepPage content={content} nextStep={nextStep} />
     </Document>
   );
 }

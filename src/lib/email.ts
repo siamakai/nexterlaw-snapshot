@@ -1,63 +1,44 @@
 import { Resend } from 'resend';
 import type { ClearTrustScores } from '@/types';
+import type { ResolvedNextStep } from '@/config/next-steps';
+import { SITE } from '@/config/site';
 import { escapeHtml } from '@/lib/security/tokens';
+import { absoluteUrl } from '@/lib/urls';
 
-const FROM_ADDRESS = 'NexterLaw <no-reply@nexterlaw.com>';
-const BASE_URL = process.env.NEXT_PUBLIC_APP_URL ?? 'https://snapshot.nexterlaw.com';
+// From address: env if set, else the existing no-reply address. Replies go to the
+// contact inbox, so "reply to this email" now reaches a person (OPEN-DECISIONS N3).
+const FROM_ADDRESS = process.env.RESEND_FROM_ADDRESS
+  ? `${process.env.RESEND_FROM_NAME || 'NexterLaw'} <${process.env.RESEND_FROM_ADDRESS}>`
+  : 'NexterLaw <no-reply@nexterlaw.com>';
+const REPLY_TO = SITE.contactEmail;
 
-// ── Email builders ────────────────────────────────────────────────────────────
+const NAVY = '#1a3a6b';
+const GOLD = '#B8902A';
 
-function day0Html(opts: {
-  firmName: string;
-  contactName: string;
-  headline: number;
-  bandDisplayName: string;
-  bandColour: string;
-  submissionId: string;
-  pdfUrl: string;
-}): string {
-  const reportLink = `${BASE_URL}${opts.pdfUrl}`;
+function send(opts: { to: string | string[]; subject: string; html: string }) {
+  const resend = new Resend(process.env.RESEND_API_KEY);
+  return resend.emails.send({ from: FROM_ADDRESS, replyTo: REPLY_TO, ...opts });
+}
+
+function shell(eyebrow: string, heading: string, body: string, footer = true): string {
   return `<!DOCTYPE html>
 <html lang="en">
 <head><meta charset="UTF-8"><meta name="viewport" content="width=device-width,initial-scale=1"></head>
 <body style="margin:0;padding:0;background:#f4f6fb;font-family:Helvetica,Arial,sans-serif;">
 <table width="100%" cellpadding="0" cellspacing="0" style="background:#f4f6fb;padding:32px 0;">
   <tr><td align="center">
-    <table width="560" cellpadding="0" cellspacing="0" style="background:#ffffff;border-radius:8px;overflow:hidden;border:1px solid #d1d9e6;">
-      <tr><td style="background:#1a3a6b;padding:32px 40px;">
-        <p style="margin:0;color:#ffffff;font-size:10px;letter-spacing:3px;text-transform:uppercase;opacity:0.7;">NexterLaw</p>
-        <h1 style="margin:12px 0 0;color:#ffffff;font-size:22px;font-weight:700;line-height:1.3;">Your AI Readiness Report is ready</h1>
+    <table width="560" cellpadding="0" cellspacing="0" style="max-width:560px;background:#ffffff;border-radius:8px;overflow:hidden;border:1px solid #d1d9e6;">
+      <tr><td style="background:${NAVY};padding:28px 40px;">
+        <p style="margin:0;color:#ffffff;font-size:10px;letter-spacing:3px;text-transform:uppercase;opacity:0.7;">${eyebrow}</p>
+        <h1 style="margin:10px 0 0;color:#ffffff;font-size:21px;font-weight:700;line-height:1.3;">${heading}</h1>
       </td></tr>
-      <tr><td style="padding:32px 40px;">
-        <p style="color:#4b5563;font-size:14px;line-height:1.6;margin:0 0 20px;">Dear ${escapeHtml(opts.contactName)},</p>
-        <p style="color:#4b5563;font-size:14px;line-height:1.6;margin:0 0 24px;">
-          Thank you for completing the NexterLaw CLEAR TRUST AI Readiness Snapshot for <strong>${escapeHtml(opts.firmName)}</strong>.
-          Your report has been generated and is ready for download.
+      <tr><td style="padding:30px 40px;">${body}</td></tr>
+      ${footer ? `<tr><td style="background:#f4f6fb;padding:18px 40px;border-top:1px solid #d1d9e6;">
+        <p style="margin:0;font-size:11px;color:#6b7280;line-height:1.6;">
+          This Snapshot is general information, not legal or regulatory advice.<br>
+          NexterLaw · <a href="https://nexterlaw.com" style="color:${NAVY};">nexterlaw.com</a> · Questions? Reply to this email.
         </p>
-        <table cellpadding="0" cellspacing="0" style="background:#f4f6fb;border-radius:6px;padding:20px 24px;margin:0 0 24px;border-left:4px solid ${opts.bandColour};">
-          <tr><td>
-            <p style="margin:0 0 4px;font-size:11px;color:#6b7280;text-transform:uppercase;letter-spacing:2px;">Overall Score</p>
-            <p style="margin:0 0 2px;font-size:36px;font-weight:700;color:${opts.bandColour};">${Math.round(opts.headline)}</p>
-            <p style="margin:0;font-size:14px;color:#374151;font-weight:600;">${opts.bandDisplayName}</p>
-          </td></tr>
-        </table>
-        <p style="text-align:center;margin:0 0 32px;">
-          <a href="${reportLink}" style="display:inline-block;background:#1a3a6b;color:#ffffff;text-decoration:none;padding:14px 32px;border-radius:6px;font-size:14px;font-weight:600;">Download Your Report (PDF)</a>
-        </p>
-        <p style="color:#4b5563;font-size:14px;line-height:1.6;margin:0 0 16px;">
-          Your report covers the ten dimensions of the CLEAR TRUST framework, your firm's regulatory obligations under the SRA, UK GDPR, and PII, plus personalised AI opportunities and risk exposures.
-        </p>
-        <p style="color:#4b5563;font-size:14px;line-height:1.6;margin:0;">
-          If you have any questions or would like to discuss your results with one of our AI governance specialists, simply reply to this email or
-          <a href="${process.env.CALENDLY_BOOKING_URL ?? '#'}" style="color:#1a3a6b;">book a complimentary 30-minute consultation</a>.
-        </p>
-      </td></tr>
-      <tr><td style="background:#f4f6fb;padding:20px 40px;border-top:1px solid #d1d9e6;">
-        <p style="margin:0;font-size:11px;color:#9ca3af;line-height:1.6;">
-          This report is an indicative self-assessment only and does not constitute legal advice.<br>
-          NexterLaw · <a href="https://nexterlaw.com" style="color:#1a3a6b;">nexterlaw.com</a>
-        </p>
-      </td></tr>
+      </td></tr>` : ''}
     </table>
   </td></tr>
 </table>
@@ -65,154 +46,148 @@ function day0Html(opts: {
 </html>`;
 }
 
-function day3Html(opts: { firmName: string; contactName: string; submissionId: string }): string {
-  const reportLink = `${BASE_URL}/api/report/${opts.submissionId}/pdf`;
-  return `<!DOCTYPE html>
-<html lang="en">
-<head><meta charset="UTF-8"></head>
-<body style="margin:0;padding:0;background:#f4f6fb;font-family:Helvetica,Arial,sans-serif;">
-<table width="100%" cellpadding="0" cellspacing="0" style="background:#f4f6fb;padding:32px 0;">
-  <tr><td align="center">
-    <table width="560" cellpadding="0" cellspacing="0" style="background:#ffffff;border-radius:8px;overflow:hidden;border:1px solid #d1d9e6;">
-      <tr><td style="background:#1a3a6b;padding:24px 40px;">
-        <p style="margin:0;color:#ffffff;font-size:10px;letter-spacing:3px;text-transform:uppercase;opacity:0.7;">NexterLaw</p>
-      </td></tr>
-      <tr><td style="padding:32px 40px;">
-        <p style="color:#4b5563;font-size:14px;line-height:1.6;margin:0 0 16px;">Dear ${escapeHtml(opts.contactName)},</p>
-        <p style="color:#4b5563;font-size:14px;line-height:1.6;margin:0 0 16px;">
-          Three days ago you received your CLEAR TRUST AI Readiness Report for <strong>${escapeHtml(opts.firmName)}</strong>. We hope it has given you a clear picture of where your firm stands on AI governance.
-        </p>
-        <p style="color:#4b5563;font-size:14px;line-height:1.6;margin:0 0 24px;">
-          If you haven't had the opportunity to review it yet, your report is still available:
-        </p>
-        <p style="text-align:center;margin:0 0 24px;">
-          <a href="${reportLink}" style="display:inline-block;background:#1a3a6b;color:#ffffff;text-decoration:none;padding:12px 28px;border-radius:6px;font-size:13px;font-weight:600;">Access Your Report</a>
-        </p>
-        <p style="color:#4b5563;font-size:14px;line-height:1.6;margin:0;">
-          Our AI governance specialists are available to walk you through the findings and help you prioritise next steps.
-          <a href="${process.env.CALENDLY_BOOKING_URL ?? '#'}" style="color:#1a3a6b;">Book a free consultation.</a>
-        </p>
-      </td></tr>
-      <tr><td style="background:#f4f6fb;padding:16px 40px;border-top:1px solid #d1d9e6;">
-        <p style="margin:0;font-size:11px;color:#9ca3af;">NexterLaw · <a href="https://nexterlaw.com" style="color:#1a3a6b;">nexterlaw.com</a></p>
-      </td></tr>
-    </table>
-  </td></tr>
-</table>
-</body>
-</html>`;
+const p = (text: string) => `<p style="color:#4b5563;font-size:14px;line-height:1.6;margin:0 0 16px;">${text}</p>`;
+const button = (href: string, label: string, primary = true) =>
+  `<a href="${escapeHtml(href)}" style="display:inline-block;background:${primary ? NAVY : '#ffffff'};color:${primary ? '#ffffff' : NAVY};border:1px solid ${NAVY};text-decoration:none;padding:13px 26px;border-radius:6px;font-size:14px;font-weight:600;margin:0 6px 8px 0;">${escapeHtml(label)}</a>`;
+
+function scoreBox(scores: Pick<ClearTrustScores, 'headline' | 'bandDisplayName' | 'bandColour'>, caption = 'Overall score'): string {
+  return `<table cellpadding="0" cellspacing="0" style="background:#f4f6fb;border-radius:6px;margin:0 0 22px;border-left:4px solid ${scores.bandColour};">
+    <tr><td style="padding:18px 22px;">
+      <p style="margin:0 0 4px;font-size:11px;color:#6b7280;text-transform:uppercase;letter-spacing:2px;">${escapeHtml(caption)}</p>
+      <p style="margin:0 0 2px;font-size:34px;font-weight:700;color:${scores.bandColour};">${Math.round(scores.headline)}</p>
+      <p style="margin:0;font-size:14px;color:#374151;font-weight:600;">${escapeHtml(scores.bandDisplayName)}</p>
+    </td></tr>
+  </table>`;
 }
 
-function day7Html(opts: { firmName: string; contactName: string }): string {
-  return `<!DOCTYPE html>
-<html lang="en">
-<head><meta charset="UTF-8"></head>
-<body style="margin:0;padding:0;background:#f4f6fb;font-family:Helvetica,Arial,sans-serif;">
-<table width="100%" cellpadding="0" cellspacing="0" style="background:#f4f6fb;padding:32px 0;">
-  <tr><td align="center">
-    <table width="560" cellpadding="0" cellspacing="0" style="background:#ffffff;border-radius:8px;overflow:hidden;border:1px solid #d1d9e6;">
-      <tr><td style="background:#1a3a6b;padding:24px 40px;">
-        <p style="margin:0;color:#ffffff;font-size:10px;letter-spacing:3px;text-transform:uppercase;opacity:0.7;">NexterLaw</p>
-      </td></tr>
-      <tr><td style="padding:32px 40px;">
-        <p style="color:#4b5563;font-size:14px;line-height:1.6;margin:0 0 16px;">Dear ${escapeHtml(opts.contactName)},</p>
-        <p style="color:#4b5563;font-size:14px;line-height:1.6;margin:0 0 16px;">
-          One week has passed since your AI Readiness Snapshot for <strong>${escapeHtml(opts.firmName)}</strong>. Law firms that act on their governance gaps now are better positioned as regulators and clients increase their scrutiny of AI use.
-        </p>
-        <p style="color:#4b5563;font-size:14px;line-height:1.6;margin:0 0 24px;">
-          NexterLaw offers a structured AI Governance Programme that builds directly on your CLEAR TRUST score — turning the report's recommendations into a documented policy framework, staff training, and ongoing compliance monitoring.
-        </p>
-        <p style="text-align:center;margin:0 0 24px;">
-          <a href="${process.env.CALENDLY_BOOKING_URL ?? '#'}" style="display:inline-block;background:#1a3a6b;color:#ffffff;text-decoration:none;padding:12px 28px;border-radius:6px;font-size:13px;font-weight:600;">Book a Free Strategy Call</a>
-        </p>
-        <p style="color:#4b5563;font-size:12px;color:#9ca3af;line-height:1.5;margin:0;">
-          If you no longer wish to receive these emails, please reply with "Unsubscribe" in the subject line.
-        </p>
-      </td></tr>
-      <tr><td style="background:#f4f6fb;padding:16px 40px;border-top:1px solid #d1d9e6;">
-        <p style="margin:0;font-size:11px;color:#9ca3af;">NexterLaw · <a href="https://nexterlaw.com" style="color:#1a3a6b;">nexterlaw.com</a></p>
-      </td></tr>
-    </table>
-  </td></tr>
-</table>
-</body>
-</html>`;
+function nextStepBlock(step: ResolvedNextStep | null): string {
+  if (!step) return '';
+  return `<div style="border-top:1px solid #e5e7eb;margin-top:8px;padding-top:20px;">
+    <p style="margin:0 0 10px;font-size:11px;color:${GOLD};text-transform:uppercase;letter-spacing:2px;font-weight:700;">Your next step</p>
+    ${step.note ? p(escapeHtml(step.note)) : ''}
+    ${button(step.main.href, step.main.label)}
+    <p style="margin:6px 0 0;font-size:13px;"><a href="${escapeHtml(step.secondary.href)}" style="color:${NAVY};">${escapeHtml(step.secondary.label)} →</a></p>
+  </div>`;
 }
 
-// ── Public API ────────────────────────────────────────────────────────────────
+// ── UK Day 0: report ready (also used for "Email me this report") ──────────────
 
 export interface SendDay0Options {
   to: string;
   firmName: string;
   scores: ClearTrustScores;
-  submissionId: string;
   pdfUrl: string;
+  resultsUrl: string | null;
+  nextStep: ResolvedNextStep | null;
 }
 
-export async function sendDay0Email(opts: SendDay0Options) {
-  const resend = new Resend(process.env.RESEND_API_KEY);
-  const contactName = opts.firmName;
-  const { data, error } = await resend.emails.send({
-    from: FROM_ADDRESS,
-    to: opts.to,
-    subject: `Your AI Readiness Report is ready — ${opts.firmName}`,
-    html: day0Html({
-      firmName: opts.firmName,
-      contactName,
-      headline: opts.scores.headline,
-      bandDisplayName: opts.scores.bandDisplayName,
-      bandColour: opts.scores.bandColour,
-      submissionId: opts.submissionId,
-      pdfUrl: opts.pdfUrl,
-    }),
-  });
+export function day0Html(o: SendDay0Options): string {
+  const pdf = absoluteUrl(o.pdfUrl);
+  return shell('NexterLaw · AI Readiness Snapshot', 'Your AI Readiness Report is ready', [
+    p(`Thank you for completing the CLEAR TRUST AI Readiness Snapshot for <strong>${escapeHtml(o.firmName)}</strong>.`),
+    scoreBox(o.scores),
+    `<p style="margin:0 0 20px;">${o.resultsUrl ? button(o.resultsUrl, 'View your results') : ''}${button(pdf, 'Download PDF', !o.resultsUrl)}</p>`,
+    p('Your report covers the ten CLEAR TRUST dimensions, the regulatory picture for your firm, three quick wins and a 90-day plan.'),
+    o.resultsUrl ? p(`You can share <a href="${escapeHtml(o.resultsUrl)}" style="color:${NAVY};">this link</a> with a partner; anyone with the link can view the report.`) : '',
+    nextStepBlock(o.nextStep),
+  ].join(''));
+}
 
+export async function sendDay0Email(o: SendDay0Options) {
+  const { data, error } = await send({
+    to: o.to,
+    subject: `Your AI Readiness Report is ready — ${o.firmName}`,
+    html: day0Html(o),
+  });
   if (error) throw new Error(`Resend error (Day 0): ${error.message}`);
   return data;
 }
 
-export interface SendDay3Options {
-  to: string;
-  firmName: string;
-  submissionId: string;
-}
+// ── Follow-ups (written but not scheduled; OPEN-DECISIONS #10 recommends GoHighLevel) ─
 
-export async function sendDay3Email(opts: SendDay3Options) {
-  const resend = new Resend(process.env.RESEND_API_KEY);
-  const { data, error } = await resend.emails.send({
-    from: FROM_ADDRESS,
-    to: opts.to,
-    subject: `Your AI Readiness Report — a quick reminder`,
-    html: day3Html({ firmName: opts.firmName, contactName: opts.firmName, submissionId: opts.submissionId }),
+export async function sendDay3Email(o: { to: string; firmName: string; resultsUrl: string }) {
+  const { data, error } = await send({
+    to: o.to,
+    subject: 'Your AI Readiness Report — a quick reminder',
+    html: shell('NexterLaw', 'Your report is still available', [
+      p(`Three days ago you received your CLEAR TRUST AI Readiness Report for <strong>${escapeHtml(o.firmName)}</strong>.`),
+      `<p>${button(o.resultsUrl, 'Open your results')}</p>`,
+    ].join('')),
   });
-
   if (error) throw new Error(`Resend error (Day 3): ${error.message}`);
   return data;
 }
 
-export interface SendDay7Options {
-  to: string;
-  firmName: string;
-}
-
-export async function sendDay7Email(opts: SendDay7Options) {
-  const resend = new Resend(process.env.RESEND_API_KEY);
-  const { data, error } = await resend.emails.send({
-    from: FROM_ADDRESS,
-    to: opts.to,
-    subject: `Strengthen your AI governance with NexterLaw`,
-    html: day7Html({ firmName: opts.firmName, contactName: opts.firmName }),
+export async function sendDay7Email(o: { to: string; firmName: string; nextStep: ResolvedNextStep }) {
+  const { data, error } = await send({
+    to: o.to,
+    subject: 'Strengthen your AI governance with NexterLaw',
+    html: shell('NexterLaw', 'One week on', [
+      p(`One week has passed since your AI Readiness Snapshot for <strong>${escapeHtml(o.firmName)}</strong>.`),
+      nextStepBlock(o.nextStep),
+    ].join('')),
   });
-
   if (error) throw new Error(`Resend error (Day 7): ${error.message}`);
   return data;
 }
 
-// ── Global Snapshot — internal team notification ──────────────────────────────
-// Unlike the Day 0/3/7 sequence above (sent TO the lead, from the async UK
-// generation pipeline), this is sent TO the NexterLaw team, synchronously,
-// whenever a Global/Worldwide submission comes in — there is no generation
-// pipeline for Global submissions to hang this off of.
+// ── Global: acknowledgement to the firm, report delivery ──────────────────────
+
+export interface GlobalAckOptions {
+  to: string;
+  contactName: string;
+  country: string;
+  dueText: string;
+  scores: Pick<ClearTrustScores, 'headline' | 'bandDisplayName' | 'bandColour'> | null;
+}
+
+export function globalAckHtml(o: GlobalAckOptions): string {
+  return shell('NexterLaw · Global Snapshot', 'We’ve received your assessment', [
+    p(`Dear ${escapeHtml(o.contactName)},`),
+    p(`Thank you for completing the Global AI Readiness Snapshot. Our team is now researching the rules that apply in <strong>${escapeHtml(o.country)}</strong> and will send your full report by <strong>${escapeHtml(o.dueText)}</strong>.`),
+    o.scores ? scoreBox(o.scores, 'Instant CLEAR TRUST score (general practice, not yet country-specific)') : '',
+    p('If anything about your firm has changed, or you have a question, just reply to this email.'),
+  ].join(''));
+}
+
+export async function sendGlobalAcknowledgement(o: GlobalAckOptions) {
+  const { data, error } = await send({ to: o.to, subject: 'Your Global AI Readiness Snapshot is in progress', html: globalAckHtml(o) });
+  if (error) throw new Error(`Resend error (Global acknowledgement): ${error.message}`);
+  return data;
+}
+
+export async function sendGlobalReportReady(o: { to: string; contactName: string; firmName: string; resultsUrl: string; nextStep: ResolvedNextStep }) {
+  const { data, error } = await send({
+    to: o.to,
+    subject: `Your Global AI Readiness Report is ready — ${o.firmName}`,
+    html: shell('NexterLaw · Global Snapshot', 'Your report is ready', [
+      p(`Dear ${escapeHtml(o.contactName)},`),
+      p(`Your Global AI Readiness Report for <strong>${escapeHtml(o.firmName)}</strong> has been prepared and reviewed by our team.`),
+      `<p style="margin:0 0 20px;">${button(o.resultsUrl, 'View your report')}</p>`,
+      nextStepBlock(o.nextStep),
+    ].join('')),
+  });
+  if (error) throw new Error(`Resend error (Global report): ${error.message}`);
+  return data;
+}
+
+// ── Team emails ────────────────────────────────────────────────────────────────
+
+function teamEmails(): string[] {
+  // Comma-separated so more than one team inbox can be notified.
+  return (process.env.TEAM_NOTIFICATION_EMAIL ?? '').split(',').map(e => e.trim()).filter(Boolean);
+}
+
+export async function sendTeamAlert(subject: string, text: string) {
+  const to = teamEmails();
+  if (to.length === 0) {
+    console.warn('[email] TEAM_NOTIFICATION_EMAIL not configured — skipping team alert:', subject);
+    return null;
+  }
+  const { data, error } = await send({ to, subject, html: shell('NexterLaw · Snapshot alert', escapeHtml(subject), p(escapeHtml(text)), false) });
+  if (error) throw new Error(`Resend error (team alert): ${error.message}`);
+  return data;
+}
 
 export interface GlobalSubmissionNotificationOptions {
   submissionId: string;
@@ -222,64 +197,39 @@ export interface GlobalSubmissionNotificationOptions {
   country: string;
   stateProvince: string;
   primaryPracticeArea: string;
+  dueText?: string;
+  isTest?: boolean;
 }
 
-function globalNotificationHtml(opts: GlobalSubmissionNotificationOptions): string {
-  const adminLink = `${BASE_URL}/admin/global-submissions/${opts.submissionId}`;
+function globalNotificationHtml(o: GlobalSubmissionNotificationOptions): string {
   // Everything below comes from a public form: escape it before putting it in HTML.
-  const region = opts.stateProvince ? `, ${escapeHtml(opts.stateProvince)}` : '';
-  return `<!DOCTYPE html>
-<html lang="en">
-<head><meta charset="UTF-8"></head>
-<body style="margin:0;padding:0;background:#f4f6fb;font-family:Helvetica,Arial,sans-serif;">
-<table width="100%" cellpadding="0" cellspacing="0" style="background:#f4f6fb;padding:32px 0;">
-  <tr><td align="center">
-    <table width="560" cellpadding="0" cellspacing="0" style="background:#ffffff;border-radius:8px;overflow:hidden;border:1px solid #d1d9e6;">
-      <tr><td style="background:#1a3a6b;padding:24px 40px;">
-        <p style="margin:0;color:#ffffff;font-size:10px;letter-spacing:3px;text-transform:uppercase;opacity:0.7;">NexterLaw · Global Snapshot</p>
-        <h1 style="margin:8px 0 0;color:#ffffff;font-size:18px;font-weight:700;">New manual-report submission</h1>
-      </td></tr>
-      <tr><td style="padding:28px 40px;">
-        <table cellpadding="0" cellspacing="0" style="width:100%;font-size:13px;color:#374151;">
-          <tr><td style="padding:4px 0;color:#6b7280;width:130px;">Contact</td><td style="padding:4px 0;font-weight:600;">${escapeHtml(opts.contactName)}</td></tr>
-          <tr><td style="padding:4px 0;color:#6b7280;">Firm</td><td style="padding:4px 0;font-weight:600;">${escapeHtml(opts.firmName)}</td></tr>
-          <tr><td style="padding:4px 0;color:#6b7280;">Email</td><td style="padding:4px 0;">${escapeHtml(opts.workEmail)}</td></tr>
-          <tr><td style="padding:4px 0;color:#6b7280;">Country</td><td style="padding:4px 0;">${escapeHtml(opts.country)}${region}</td></tr>
-          <tr><td style="padding:4px 0;color:#6b7280;">Practice area</td><td style="padding:4px 0;">${escapeHtml(opts.primaryPracticeArea)}</td></tr>
-          <tr><td style="padding:4px 0;color:#6b7280;">Submission ID</td><td style="padding:4px 0;font-family:monospace;font-size:12px;">${opts.submissionId}</td></tr>
-        </table>
-        <p style="text-align:center;margin:24px 0 0;">
-          <a href="${adminLink}" style="display:inline-block;background:#1a3a6b;color:#ffffff;text-decoration:none;padding:12px 28px;border-radius:6px;font-size:13px;font-weight:600;">Open in Admin</a>
-        </p>
-      </td></tr>
+  const region = o.stateProvince ? `, ${escapeHtml(o.stateProvince)}` : '';
+  const row = (label: string, value: string, mono = false) =>
+    `<tr><td style="padding:4px 0;color:#6b7280;width:130px;">${label}</td><td style="padding:4px 0;${mono ? 'font-family:monospace;font-size:12px;' : 'font-weight:600;'}">${value}</td></tr>`;
+  return shell('NexterLaw · Global Snapshot', `New ${o.isTest ? 'TEST ' : ''}manual-report submission`, `
+    <table cellpadding="0" cellspacing="0" style="width:100%;font-size:13px;color:#374151;">
+      ${row('Contact', escapeHtml(o.contactName))}
+      ${row('Firm', escapeHtml(o.firmName))}
+      ${row('Email', escapeHtml(o.workEmail))}
+      ${row('Country', `${escapeHtml(o.country)}${region}`)}
+      ${row('Practice area', escapeHtml(o.primaryPracticeArea))}
+      ${o.dueText ? row('Report due', escapeHtml(o.dueText)) : ''}
+      ${row('Submission ID', escapeHtml(o.submissionId), true)}
     </table>
-  </td></tr>
-</table>
-</body>
-</html>`;
+    <p style="text-align:center;margin:24px 0 0;">${button(absoluteUrl(`/admin/global-submissions/${o.submissionId}`), 'Open in Admin')}</p>`, false);
 }
 
-export async function sendGlobalSubmissionNotification(opts: GlobalSubmissionNotificationOptions) {
-  // Comma-separated so more than one team inbox can be notified, e.g.
-  // "team@nexterai.agency,person@gmail.com".
-  const teamEmails = (process.env.TEAM_NOTIFICATION_EMAIL ?? '')
-    .split(',')
-    .map(e => e.trim())
-    .filter(Boolean);
-
-  if (teamEmails.length === 0) {
+export async function sendGlobalSubmissionNotification(o: GlobalSubmissionNotificationOptions) {
+  const to = teamEmails();
+  if (to.length === 0) {
     console.warn('[email] TEAM_NOTIFICATION_EMAIL not configured — skipping Global submission notification.');
     return null;
   }
-
-  const resend = new Resend(process.env.RESEND_API_KEY);
-  const { data, error } = await resend.emails.send({
-    from: FROM_ADDRESS,
-    to: teamEmails,
-    subject: `New Global Snapshot submission — ${opts.firmName} (${opts.country})`,
-    html: globalNotificationHtml(opts),
+  const { data, error } = await send({
+    to,
+    subject: `New ${o.isTest ? 'TEST ' : ''}Global Snapshot submission — ${o.firmName} (${o.country})`,
+    html: globalNotificationHtml(o),
   });
-
   if (error) throw new Error(`Resend error (Global notification): ${error.message}`);
   return data;
 }

@@ -12,7 +12,9 @@
     "db:migrate": "prisma migrate dev",
     "db:studio": "prisma studio",
     "test": "vitest run",
-    "typecheck": "next typegen && tsc --noEmit"
+    "typecheck": "next typegen && tsc --noEmit",
+    "e2e": "playwright test",
+    "kb:review": "tsx --tsconfig tsconfig.json scripts/export-kb-review.ts"
   },
   "prisma": {
     "seed": "tsx --tsconfig tsconfig.json prisma/seed.ts"
@@ -47,6 +49,7 @@
   },
   "devDependencies": {
     "@netlify/functions": "^5.3.0",
+    "@playwright/test": "^1.56.1",
     "@tailwindcss/postcss": "^4",
     "@types/node": "^20",
     "@types/pg": "^8.20.0",

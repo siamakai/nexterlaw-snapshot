@@ -4,11 +4,23 @@
     "src/app/api/submit/route.ts": {
       "maxDuration": 300
     },
+    "src/app/api/submit-global/route.ts": {
+      "maxDuration": 300
+    },
+    "src/app/api/admin/submissions/[id]/retry/route.ts": {
+      "maxDuration": 300
+    },
+    "src/app/api/admin/global-submissions/[id]/report/route.ts": {
+      "maxDuration": 300
+    },
     "src/app/api/report/[id]/route.ts": {
       "maxDuration": 30
     },
     "src/app/api/report/[id]/pdf/route.ts": {
       "maxDuration": 60
+    },
+    "src/app/api/r/[token]/[action]/route.ts": {
+      "maxDuration": 30
     }
   }
 }

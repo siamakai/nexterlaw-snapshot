@@ -1,3 +1,5 @@
+import { SITE } from '@/config/site';
+
 export const PRACTICE_TYPES = [
   { slug: 'conveyancing-property', label: 'Conveyancing/Property' },
   { slug: 'corporate-ma', label: 'Corporate/M&A' },
@@ -13,7 +15,8 @@ export const PRACTICE_TYPES = [
 ] as const;
 
 export const FIRM_SIZE_OPTIONS = [
-  { value: 'MICRO', label: '1–4 fee-earners' },
+  { value: 'SOLE', label: 'Just me' },
+  { value: 'MICRO', label: '2–4 fee-earners' },
   { value: 'SMALL', label: '5–20 fee-earners' },
   { value: 'MEDIUM', label: '21–50 fee-earners' },
   { value: 'LARGE', label: '51–200 fee-earners' },
@@ -64,7 +67,8 @@ export const CLEAR_TRUST_DIMENSIONS = [
   {
     key: 'rights' as const,
     letter: 'R',
-    name: 'Rights',
+    // [CONFIRM #4] "Rights & Confidentiality" behind NEXT_PUBLIC_RENAME_RIGHTS
+    name: SITE.renameRights ? 'Rights & Confidentiality' : 'Rights',
     description: 'Protection of client confidentiality, consent, and data rights in AI workflows',
     question: 'Do you have rules on entering client-confidential information into AI tools?',
   },
@@ -85,7 +89,7 @@ export const CLEAR_TRUST_DIMENSIONS = [
   {
     key: 'usageGovernance' as const,
     letter: 'U',
-    name: 'Usage governance',
+    name: 'Usage Governance',
     description: 'Whether a written position exists on which tools and which data are permitted',
     question: 'Do you have a written position on which AI tools staff may use?',
   },
@@ -107,11 +111,7 @@ export const CLEAR_TRUST_DIMENSIONS = [
 
 export type DimensionKey = (typeof CLEAR_TRUST_DIMENSIONS)[number]['key'];
 
-export const SCORE_BANDS = [
-  { label: 'EXPOSED' as const, min: 0, max: 39, displayName: 'Exposed', colour: '#ef4444' },
-  { label: 'DEVELOPING' as const, min: 40, max: 69, displayName: 'Developing', colour: '#f59e0b' },
-  { label: 'IN_CONTROL' as const, min: 70, max: 100, displayName: 'In Control', colour: '#22c55e' },
-];
+// Score bands live in src/lib/bands.ts (single source of truth).
 
 export const FREE_EMAIL_DOMAINS = [
   'gmail.com', 'googlemail.com', 'hotmail.com', 'hotmail.co.uk',

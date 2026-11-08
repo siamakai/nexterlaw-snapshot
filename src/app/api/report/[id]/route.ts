@@ -1,58 +1,8 @@
 import type { NextRequest } from 'next/server';
 import { prisma } from '@/lib/db/prisma';
 import { pdfPathFor, resolveReportRef } from '@/lib/security/report-access';
-import type {
-  ReportStatusResponse,
-  GeneratedReportContent,
-  ClearTrustScores,
-  DimensionScore,
-} from '@/types';
-import type { Submission, GeneratedReport } from '@prisma/client';
-
-const BAND_META: Record<string, { displayName: string; colour: string }> = {
-  EXPOSED: { displayName: 'Exposed', colour: '#ef4444' },
-  DEVELOPING: { displayName: 'Developing', colour: '#f59e0b' },
-  IN_CONTROL: { displayName: 'In Control', colour: '#22c55e' },
-};
-
-type SubmissionWithReport = Submission & { report: GeneratedReport | null };
-
-function rebuildScores(s: SubmissionWithReport): ClearTrustScores {
-  const bandMeta = BAND_META[s.scoreBand ?? 'EXPOSED'] ?? BAND_META['EXPOSED'];
-
-  const dimensions: DimensionScore[] = [
-    { key: 'compliance',      letter: 'C', name: 'Compliance',       score: s.scoreCompliance      ?? 0, answer: s.answerCompliance },
-    { key: 'literacy',        letter: 'L', name: 'Literacy',         score: s.scoreLiteracy        ?? 0, answer: s.answerLiteracy },
-    { key: 'explainability',  letter: 'E', name: 'Explainability',   score: s.scoreExplainability  ?? 0, answer: s.answerExplainability },
-    { key: 'accountability',  letter: 'A', name: 'Accountability',   score: s.scoreAccountability  ?? 0, answer: s.answerAccountability },
-    { key: 'rights',          letter: 'R', name: 'Rights',           score: s.scoreRights          ?? 0, answer: s.answerRights },
-    { key: 'transparency',    letter: 'T', name: 'Transparency',     score: s.scoreTransparency    ?? 0, answer: s.answerTransparency },
-    { key: 'reliability',     letter: 'R', name: 'Reliability',      score: s.scoreReliability     ?? 0, answer: s.answerReliability },
-    { key: 'usageGovernance', letter: 'U', name: 'Usage Governance', score: s.scoreUsageGovernance ?? 0, answer: s.answerUsageGovernance },
-    { key: 'security',        letter: 'S', name: 'Security',         score: s.scoreSecurity        ?? 0, answer: s.answerSecurity },
-    { key: 'traceability',    letter: 'T', name: 'Traceability',     score: s.scoreTraceability    ?? 0, answer: s.answerTraceability },
-  ];
-
-  return {
-    dimensions,
-    headline: s.scoreHeadline ?? 0,
-    band: (s.scoreBand ?? 'EXPOSED') as ClearTrustScores['band'],
-    bandDisplayName: bandMeta.displayName,
-    bandColour: bandMeta.colour,
-  };
-}
-
-function rebuildReport(r: GeneratedReport): GeneratedReportContent {
-  return {
-    cover: r.coverJson as unknown as GeneratedReportContent['cover'],
-    scoreNarrative: r.scoreNarrativeJson as string,
-    regulatoryMap: r.regulatoryMapJson as unknown as GeneratedReportContent['regulatoryMap'],
-    shadowAi: r.shadowAiJson as string,
-    opportunities: r.opportunitiesJson as unknown as GeneratedReportContent['opportunities'],
-    exposures: r.exposuresJson as unknown as GeneratedReportContent['exposures'],
-    upsell: r.upsellJson as string,
-  };
-}
+import { contentFromReport, scoresFromRow, stageText } from '@/lib/report-data';
+import type { ReportStatusResponse } from '@/types';
 
 export async function GET(req: NextRequest, ctx: RouteContext<'/api/report/[id]'>) {
   // [id] is the result token (new links) or the raw submission id (old emails).
@@ -73,12 +23,19 @@ export async function GET(req: NextRequest, ctx: RouteContext<'/api/report/[id]'
   // Never send internal error text to the browser; it stays in failureReason.
   const response: ReportStatusResponse = {
     status: submission.status,
+    stage: stageText(submission.status),
+    elapsedSeconds: Math.round((Date.now() - submission.createdAt.getTime()) / 1000),
     ...(submission.status === 'FAILED' ? { error: 'Report generation failed.' } : {}),
   };
 
+  // The score is calculated without AI, so it is available as soon as scoring
+  // has run, even if the written report is slow or fails.
+  if (submission.scoreHeadline != null) {
+    response.scores = scoresFromRow(submission);
+  }
+
   if (submission.status === 'COMPLETE' && submission.report) {
-    response.scores = rebuildScores(submission);
-    response.report = rebuildReport(submission.report);
+    response.report = contentFromReport(submission.report);
     response.pdfUrl = pdfPathFor(submission);
   }
 

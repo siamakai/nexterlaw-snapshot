@@ -21,6 +21,9 @@ export const RATE_LIMITS = {
   // Legacy links that use the raw submission id (old emails): tighter.
   reportLegacy:      { requests: 20,  window: '1 m' as Window },
   pdf:               { requests: 20,  window: '1 m' as Window },
+  // Results-page buttons: "email me", reminder, next-step click.
+  resultAction:      { requests: 10,  window: '1 h' as Window },
+  resultPage:        { requests: 60,  window: '1 m' as Window },
 } as const;
 
 export type RateLimitName = keyof typeof RATE_LIMITS;

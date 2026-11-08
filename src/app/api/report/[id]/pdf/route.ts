@@ -4,84 +4,56 @@ import { renderToBuffer } from '@react-pdf/renderer';
 import { prisma } from '@/lib/db/prisma';
 import { resolveReportRef } from '@/lib/security/report-access';
 import { ReportPdf } from '@/lib/pdf-template';
-import type { GeneratedReportContent, ClearTrustScores, DimensionScore } from '@/types';
-import type { Submission, GeneratedReport } from '@prisma/client';
-
-const BAND_META: Record<string, { displayName: string; colour: string }> = {
-  EXPOSED: { displayName: 'Exposed', colour: '#ef4444' },
-  DEVELOPING: { displayName: 'Developing', colour: '#f59e0b' },
-  IN_CONTROL: { displayName: 'In Control', colour: '#22c55e' },
-};
-
-type Row = Submission & { report: GeneratedReport | null };
-
-function buildScores(s: Row): ClearTrustScores {
-  const bandMeta = BAND_META[s.scoreBand ?? 'EXPOSED'] ?? BAND_META['EXPOSED'];
-  const dimensions: DimensionScore[] = [
-    { key: 'compliance',      letter: 'C', name: 'Compliance',       score: s.scoreCompliance      ?? 0, answer: s.answerCompliance },
-    { key: 'literacy',        letter: 'L', name: 'Literacy',         score: s.scoreLiteracy        ?? 0, answer: s.answerLiteracy },
-    { key: 'explainability',  letter: 'E', name: 'Explainability',   score: s.scoreExplainability  ?? 0, answer: s.answerExplainability },
-    { key: 'accountability',  letter: 'A', name: 'Accountability',   score: s.scoreAccountability  ?? 0, answer: s.answerAccountability },
-    { key: 'rights',          letter: 'R', name: 'Rights',           score: s.scoreRights          ?? 0, answer: s.answerRights },
-    { key: 'transparency',    letter: 'T', name: 'Transparency',     score: s.scoreTransparency    ?? 0, answer: s.answerTransparency },
-    { key: 'reliability',     letter: 'R', name: 'Reliability',      score: s.scoreReliability     ?? 0, answer: s.answerReliability },
-    { key: 'usageGovernance', letter: 'U', name: 'Usage Governance', score: s.scoreUsageGovernance ?? 0, answer: s.answerUsageGovernance },
-    { key: 'security',        letter: 'S', name: 'Security',         score: s.scoreSecurity        ?? 0, answer: s.answerSecurity },
-    { key: 'traceability',    letter: 'T', name: 'Traceability',     score: s.scoreTraceability    ?? 0, answer: s.answerTraceability },
-  ];
-  return {
-    dimensions,
-    headline: s.scoreHeadline ?? 0,
-    band: (s.scoreBand ?? 'EXPOSED') as ClearTrustScores['band'],
-    bandDisplayName: bandMeta.displayName,
-    bandColour: bandMeta.colour,
-  };
-}
-
-function buildContent(r: GeneratedReport): GeneratedReportContent {
-  return {
-    cover: r.coverJson as unknown as GeneratedReportContent['cover'],
-    scoreNarrative: r.scoreNarrativeJson as string,
-    regulatoryMap: r.regulatoryMapJson as unknown as GeneratedReportContent['regulatoryMap'],
-    shadowAi: r.shadowAiJson as string,
-    opportunities: r.opportunitiesJson as unknown as GeneratedReportContent['opportunities'],
-    exposures: r.exposuresJson as unknown as GeneratedReportContent['exposures'],
-    upsell: r.upsellJson as string,
-  };
-}
+import { loadResultByToken, type ResultView } from '@/lib/results';
+import { contentFromReport, scoresFromRow } from '@/lib/report-data';
+import { resolveNextStep, type RouteId } from '@/config/next-steps';
 
 export async function GET(req: NextRequest, ctx: RouteContext<'/api/report/[id]/pdf'>) {
-  // [id] is the result token (new links) or the raw submission id (old emails).
+  // [id] is the result token (new links, UK or Global) or the raw submission id (old emails).
   const { id: ref } = await ctx.params;
 
   const access = await resolveReportRef(req, ref, 'pdf');
   if (!access.ok) return access.response;
 
-  const submission = await prisma.submission.findUnique({
-    where: access.where,
-    include: { report: true },
-  });
+  let view: Pick<ResultView, 'path' | 'firmName' | 'scores' | 'report' | 'nextStep' | 'planLinks'> | null = null;
 
-  if (!submission || submission.status !== 'COMPLETE' || !submission.report) {
+  if (access.legacy) {
+    // Links in emails sent before v2: UK only, looked up by id.
+    const s = await prisma.submission.findUnique({ where: access.where, include: { report: true } });
+    if (s?.status === 'COMPLETE' && s.report) {
+      view = {
+        path: 'UK',
+        firmName: s.id,
+        scores: scoresFromRow(s),
+        report: contentFromReport(s.report),
+        nextStep: resolveNextStep((s.route as RouteId | null) ?? 'SNAPSHOT_REVIEW'),
+        planLinks: {},
+      };
+    }
+  } else {
+    const r = await loadResultByToken(ref);
+    if (r && r.status === 'COMPLETE') view = r;
+  }
+
+  if (!view?.report || !view.scores) {
     return Response.json({ error: 'Report not ready' }, { status: 404 });
   }
 
-  const scores = buildScores(submission);
-  const content = buildContent(submission.report);
-
-  const element = React.createElement(
-    ReportPdf,
-    { content, scores },
-  ) as unknown as Parameters<typeof renderToBuffer>[0];
+  const element = React.createElement(ReportPdf, {
+    content: view.report,
+    scores: view.scores,
+    nextStep: view.nextStep,
+    planLinks: view.planLinks,
+    path: view.path,
+  }) as unknown as Parameters<typeof renderToBuffer>[0];
 
   const buffer = await renderToBuffer(element);
-
-  const filename = `nexterlaw-ai-readiness-${submission.id}.pdf`;
+  const safeName = (view.report.cover?.firmName || 'report').toLowerCase().replace(/[^a-z0-9]+/g, '-').slice(0, 60);
 
   return new Response(new Uint8Array(buffer), {
     headers: {
       'Content-Type': 'application/pdf',
-      'Content-Disposition': `attachment; filename="${filename}"`,
+      'Content-Disposition': `attachment; filename="nexterlaw-ai-readiness-${safeName}.pdf"`,
       'Content-Length': String(buffer.byteLength),
       'Cache-Control': 'private, max-age=86400',
     },

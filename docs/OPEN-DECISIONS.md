@@ -1,41 +1,47 @@
 # Open decisions
 
-Placeholders in code will point here. ✅ = decided, ⏳ = open.
+Updated 8 Nov 2026 after the v2 build. ✅ = decided · 🔧 = built with a **default** you can change by config (no code change) · ⏳ = open.
+Where a default was needed to finish the build, it follows the spec's recommendation or the safest option, and the setting to change it is named.
 
-## Urgent (before any code ships)
+## Urgent (before deploying)
 | # | Decision | Status |
 |---|---|---|
-| U1 | Developer checks **today** whether `/admin/submissions`, `/admin/knowledge-base`, `/api/admin/submissions/csv` and `/api/admin/kb` are open on the live site. If yes: take them down/protect now, and assess whether a UK GDPR breach notification is needed | ⏳ |
-| U2 | Where is the deployed code? → `github.com/siamakai/nexterlaw-snapshot` `main` @ `f85df8a` (found via Vercel, 4 Nov) | ✅ |
-| U2b | Ali's repo (`alisadri1985-max/nexterlaw-snapshot`) is 3 commits behind. Archive it, or keep it in sync? Make sure nobody deploys from it | ⏳ |
-| U3 | Hosting is Vercel. Delete the Netlify function and `netlify.toml`? | ⏳ |
-| U5 | Global: the live code deliberately shows **no score**; the spec wants an instant score. Which? (V2-PLAN C9) | ⏳ |
-| U4 | Who can access the Google Sheet with firm names + emails; does the privacy notice cover it? | ⏳ |
+| U1 | Are the admin pages and CSV exports open on the live site **today**? If yes, block `/admin` and `/api/admin` in Vercel Firewall now and assess whether a UK GDPR breach notification is needed | ⏳ |
+| U2 | Where is the deployed code? → `siamakai/nexterlaw-snapshot` `main` | ✅ |
+| U2b | Ali's older copy of the repo: archive it so nobody deploys from it | ⏳ |
+| U3 | Vercel's Git link showed "Project Link not found" on 4 Nov: grant the Vercel GitHub app access to the repo, or no push deploys | ⏳ |
+| U4 | Google Sheet "API Usage" holds firm names and emails: who can see it, and does the privacy notice cover it? (Test submissions are no longer logged there) | ⏳ |
+| U5 | Global instant score: live code showed none; spec wants it | 🔧 Shown, with a caption saying it is general, not country-specific. Hide with `NEXT_PUBLIC_GLOBAL_SHOW_SCORE=false` |
 
 ## From spec §8
 | # | Decision | Status |
 |---|---|---|
 | 1 | Admin pages reachable without login? (= U1) | ⏳ |
-| 2 | Where is the deployed code? (= U2) | ✅ |
-| 3 | Score weighting: fix it (true weighted mean) or drop it (simple average) | ⏳ |
-| 4 | Rename "Rights" → "Rights & Confidentiality"; keep Yes / Not sure / No for v2 | ⏳ |
-| 5 | Intake Opportunity thresholds; add "Just me" (`SOLE`) size option | ⏳ |
-| 6 | Default brand for 2–20 staff with no intake gap (Agency or NexterLaw) | ⏳ |
-| 7 | Global: who reviews/approves; first countries for jurisdiction notes | ⏳ |
-| 8 | Privacy notice URL and consent wording | ⏳ |
-| 9 | Booking links (Calendly or GHL calendars), Skool, course, webinar URLs | ⏳ |
-| 10 | Follow-up emails in the app (day 3/7) or GoHighLevel (spec recommends GHL) | ⏳ |
-| 11 | Who reviews the KB references, by when | ⏳ |
-| 12 | Report model: Opus vs faster, after the comparison (the comparison itself costs API calls; needs GO) | ⏳ |
+| 2 | Where is the deployed code? | ✅ |
+| 3 | Score weighting | 🔧 Removed: it cancelled out, so scores are identical to before. A true weighted mean can be added in `src/lib/scoring.ts` |
+| 4 | Rename "Rights" → "Rights & Confidentiality"; keep Yes / Not sure / No | 🔧 Name unchanged; switch with `NEXT_PUBLIC_RENAME_RIGHTS=true`. Answer scale kept at three |
+| 5 | Intake Opportunity thresholds; "Just me" size | 🔧 Spec thresholds (`src/lib/intake.ts`); `SOLE` = "Just me" added, MICRO relabelled "2–4" |
+| 6 | Brand for 2–20 staff with no intake gap | 🔧 Nexter AI Agency (`src/config/next-steps.ts`, one line) |
+| 7 | Global: who reviews/approves; first countries for notes | ⏳ Review screen built (`/admin/global-submissions/[id]`); notes go in `content/jurisdictions/index.ts` (empty) |
+| 8 | Privacy notice URL and consent wording | ⏳ Set `NEXT_PUBLIC_PRIVACY_URL`; until then the link opens an email to hello@nexterlaw.com. Consent wording is the spec's |
+| 9 | Booking, Skool, course, webinar URLs | ⏳ Set the `NEXT_STEP_*` and `RESOURCE_*` env vars (see V2-REPORT). Unset links open an email instead of breaking |
+| 10 | Follow-ups: in the app or GoHighLevel | 🔧 GoHighLevel (spec recommendation): CRM tags carry everything a workflow needs. Day-3/7 emails remain written but unscheduled |
+| 11 | Who reviews the KB references, by when | ⏳ `docs/KB-REVIEW.md` is ready (35 entries). Until references are approved, reports name instruments without pinpoint numbers |
+| 12 | Report model | ⏳ `scripts/compare-models.ts` written, **not run** (paid calls). Switch later with `REPORT_MODEL` |
 
-## New from Phase 0
+## New from Phase 0 and the build
 | # | Decision | Status |
 |---|---|---|
-| N1 | Show score + band **before** the details form (P1)? Or keep the form before results as in the spec | ⏳ |
-| N2 | Add "timeline" and "biggest barrier" intake questions (P2)? | ⏳ |
-| N3 | Day-0 email comes from `no-reply@` but says "reply to this email". Real reply-to address, or drop the line? | ⏳ |
-| N4 | EU layer currently triggers on EU = "Not sure" as well as "Yes". Keep? | ⏳ |
-| N5 | If Upstash is unreachable, rate limiter fails open (site works) or closed (site blocks)? Recommended: open + alert | ⏳ |
-| N6 | Contact address on the failure message (currently a personal agency email) | ⏳ |
-| N7 | Which proposals P3–P10 in V2-PLAN.md to include | ⏳ |
-| N8 | Lead records: keep one per email (overwritten today) or one per submission? | ⏳ |
+| N1 | Show score before the details form | ⏳ Not built (spec order kept: questions → intake → details → results). Easy to add later |
+| N2 | Extra intake questions (timeline, biggest barrier) | ⏳ Not built |
+| N3 | "Reply to this email" from a no-reply address | 🔧 Reply-to is now hello@nexterlaw.com. Override the sender with `RESEND_FROM_ADDRESS` / `RESEND_FROM_NAME` |
+| N4 | EU AI Act content when EU = "Not sure" | ⏳ Unchanged (included). Routing treats only "Yes" as EU |
+| N5 | Rate limiter when Upstash is down | 🔧 Fails open and logs |
+| N6 | Contact address on error messages | 🔧 hello@nexterlaw.com |
+| N7 | Proposals P3–P10 | ⏳ Not built, except: phone layout fixes, and showing the score early on the building screen |
+| N8 | One Lead per email or per submission | ⏳ Unchanged (one per email, latest details win; consent reflects the latest choice) |
+| N9 | EU question optional (spec) vs required | 🔧 Kept **required**: leaving it blank would silently add or drop EU AI Act content |
+| N10 | GoHighLevel: webhook or API; field and pipeline names | 🔧 Webhook (`GHL_WEBHOOK_URL`), mock until `GHL_MODE=live`. Tags and fields listed in V2-REPORT for Parastoo |
+| N11 | Analytics provider | ⏳ Events fire to Google Tag Manager or Plausible if installed; none is installed yet |
+| N12 | Sample report (fictional firm) and creator photo for the trust block | ⏳ Set `NEXT_PUBLIC_SAMPLE_REPORT_URL` / `NEXT_PUBLIC_CREATOR_PHOTO_URL`; hidden or monogram until then |
+| N13 | `KnowledgeBaseEntry.lastReviewedDate` is stamped automatically on seed/edit, so it doesn't show a legal review happened. Track real reviews in KB-REVIEW.md, or add a reviewer field | ⏳ |

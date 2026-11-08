@@ -16,7 +16,8 @@ enum Vertical {
 }
 
 enum FirmSizeBand {
-  MICRO      // 1–4 fee-earners
+  SOLE       // "Just me" (v2)
+  MICRO      // 1–4 fee-earners (labelled "2–4" from v2)
   SMALL      // 5–20
   MEDIUM     // 21–50
   LARGE      // 51–200
@@ -82,11 +83,16 @@ model Lead {
   id             String    @id @default(cuid())
   firmName       String
   firmWebsite    String
-  city           String
+  city           String?   // optional from v2 (dropped on the UK path)
   country        String    @default("United Kingdom")
+  stateRegion    String?
   workEmail      String
+  // consentGiven = the required "general information, not advice" acknowledgement.
   consentGiven   Boolean   @default(false)
   consentAt      DateTime?
+  // Optional, separate consent to be contacted about results and services (v2).
+  marketingConsent   Boolean   @default(false)
+  marketingConsentAt DateTime?
   privacyVersion String    @default("1.0")
   crmTagged      Boolean   @default(false)
   crmTaggedAt    DateTime?
@@ -148,6 +154,18 @@ model Submission {
   // Unguessable token used in report/PDF links instead of the id (Phase 1 hotfix).
   // Nullable so submissions made before the change keep working via their id.
   resultToken    String?          @unique
+
+  // v2: client-intake questions (not part of the CLEAR TRUST score)
+  intakeOutOfHours  String?
+  intakeReplySpeed  String?
+  intakeVolume      String?
+  intakeCaseSystem  String?
+  intakeRating      String?   // HIGH | MEDIUM | LOW
+  route             String?   // next-step route id (src/config/next-steps.ts)
+  nextStepClickedAt DateTime?
+  retakeReminderAt  DateTime?
+  isTest            Boolean   @default(false)
+  promptVersion     String?
 
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
@@ -277,6 +295,10 @@ model GeneratedReport {
   opportunitiesJson  Json?
   exposuresJson      Json?
   upsellJson         Json?
+  // v2 sections
+  quickWinsJson      Json?
+  intakeNoteJson     Json?
+  plan90DayJson      Json?
 
   rawClaudeResponse String?  @db.Text
   validationPassed  Boolean  @default(false)
@@ -434,6 +456,32 @@ model GlobalSubmission {
   reportPreparedAt DateTime?
   reportSentAt     DateTime?
   internalNotes    String?            @db.Text
+
+  // v2 additions (all optional; existing rows unaffected)
+  resultToken        String?   @unique
+  isTest             Boolean   @default(false)
+  marketingConsent   Boolean   @default(false)
+  marketingConsentAt DateTime?
+  privacyVersion     String?
+  // Instant CLEAR TRUST score (universal, not jurisdiction-specific); see V2-PLAN C9
+  scoreHeadline      Float?
+  scoreBand          ScoreBandLabel?
+  // Client-intake questions (same as UK)
+  intakeOutOfHours   String?
+  intakeReplySpeed   String?
+  intakeVolume       String?
+  intakeCaseSystem   String?
+  intakeRating       String?
+  route              String?
+  nextStepClickedAt  DateTime?
+  // Manual report workflow: due time, AI first draft, human-approved final
+  dueAt              DateTime?
+  reportDraftJson    Json?
+  reportDraftAt      DateTime?
+  reportFinalJson    Json?
+  approvedBy         String?
+  approvedAt         DateTime?
+  acknowledgedAt     DateTime?
 
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt

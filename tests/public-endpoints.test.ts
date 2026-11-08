@@ -20,7 +20,7 @@ vi.mock('@/lib/security/rate-limit', async (orig) => {
 const db = {
   lead: { findFirst: vi.fn(), create: vi.fn(), update: vi.fn() },
   submission: { create: vi.fn(), findUnique: vi.fn(), updateMany: vi.fn(), findUniqueOrThrow: vi.fn(), update: vi.fn() },
-  globalSubmission: { create: vi.fn() },
+  globalSubmission: { create: vi.fn(), findUnique: vi.fn(async () => null) },
 };
 vi.mock('@/lib/db/prisma', () => ({ prisma: db }));
 
@@ -47,14 +47,15 @@ beforeEach(() => {
 });
 
 const ukBody = {
-  intake: {
-    firmName: 'Test & Co', firmWebsite: '', city: 'Leeds', country: 'United Kingdom',
-    practiceTypes: ['family'], firmSize: 'SMALL', euFacing: 'NO', workEmail: 'a@test-firm.co.uk',
-  },
   selfAssessment: Object.fromEntries(
     ['compliance', 'literacy', 'explainability', 'accountability', 'rights', 'transparency',
      'reliability', 'usageGovernance', 'security', 'traceability'].map(k => [k, 'YES'])),
-  consentGiven: true,
+  intakeAnswers: { outOfHours: 'VOICEMAIL_EMAIL', replySpeed: 'SAME_DAY', volume: 'UNDER_20', caseSystem: 'CLIO' },
+  details: {
+    firmName: 'Test & Co', firmWebsite: '', practiceTypes: ['family'], firmSize: 'SMALL', euFacing: 'NO',
+    workEmail: 'a@test-firm.co.uk',
+  },
+  consent: { advice: true, marketing: false },
 };
 const post = (url: string, body: unknown, ip = '198.51.100.7') =>
   new Request(url, { method: 'POST', body: JSON.stringify(body), headers: { 'x-forwarded-for': ip } });
@@ -80,6 +81,13 @@ describe('POST /api/submit', () => {
     expect(db.submission.create).not.toHaveBeenCalled();
   });
 
+  it('rejects a submission without the advice acknowledgement', async () => {
+    const { POST } = await import('@/app/api/submit/route');
+    const res = await POST(post('http://x/api/submit', { ...ukBody, consent: { advice: false, marketing: true } }));
+    expect(res.status).toBe(422);
+    expect(db.submission.create).not.toHaveBeenCalled();
+  });
+
   it('creates the submission with a result token and returns it', async () => {
     db.lead.findFirst.mockResolvedValue(null);
     db.lead.create.mockResolvedValue({ id: 'lead1' });
@@ -91,6 +99,11 @@ describe('POST /api/submit', () => {
     const json = await res.json();
     expect(json.submissionId).toBe('sub1');
     expect(isResultToken(json.resultToken)).toBe(true);
+    // Instant score, intake rating and route are stored with the submission.
+    expect(json.scores).toMatchObject({ headline: 100, band: 'IN_CONTROL' });
+    const data = db.submission.create.mock.calls[0][0].data;
+    expect(data).toMatchObject({ intakeRating: 'HIGH', route: 'INTAKE_REVIEW', isTest: false });
+    expect(db.lead.create.mock.calls[0][0].data).toMatchObject({ marketingConsent: false, consentGiven: true });
     // On Vercel (no URL / secret) generation runs via after().
     expect(afterCallbacks).toHaveLength(1);
   });
@@ -113,7 +126,7 @@ describe('GET /api/report/[ref]', () => {
   const get = (ref: string) => new Request(`http://x/api/report/${ref}`, { headers: { 'x-forwarded-for': '203.0.113.1' } });
 
   it('looks up by token for token-shaped refs (no legacy limit)', async () => {
-    db.submission.findUnique.mockResolvedValue({ id: 'sub1', resultToken: TOKEN, status: 'GENERATING', report: null });
+    db.submission.findUnique.mockResolvedValue({ id: 'sub1', resultToken: TOKEN, status: 'GENERATING', report: null, createdAt: new Date() });
     const { GET } = await import('@/app/api/report/[id]/route');
     const res = await GET(get(TOKEN) as never, ctx(TOKEN));
     expect(res.status).toBe(200);
@@ -122,7 +135,7 @@ describe('GET /api/report/[ref]', () => {
   });
 
   it('still serves legacy id links, with the tighter legacy limit', async () => {
-    db.submission.findUnique.mockResolvedValue({ id: 'cmlegacyid', resultToken: null, status: 'PENDING', report: null });
+    db.submission.findUnique.mockResolvedValue({ id: 'cmlegacyid', resultToken: null, status: 'PENDING', report: null, createdAt: new Date() });
     const { GET } = await import('@/app/api/report/[id]/route');
     await GET(get('cmlegacyid') as never, ctx('cmlegacyid'));
     expect(db.submission.findUnique).toHaveBeenCalledWith(expect.objectContaining({ where: { id: 'cmlegacyid' } }));
@@ -140,16 +153,18 @@ describe('GET /api/report/[ref]', () => {
   it('never leaks internal failure text', async () => {
     db.submission.findUnique.mockResolvedValue({
       id: 'sub1', resultToken: TOKEN, status: 'FAILED', report: null,
-      failureReason: 'Anthropic 529 overloaded at internal-host:1234',
+      failureReason: 'Anthropic 529 overloaded at internal-host:1234', createdAt: new Date(),
     });
     const { GET } = await import('@/app/api/report/[id]/route');
     const json = await (await GET(get(TOKEN) as never, ctx(TOKEN))).json();
-    expect(json).toEqual({ status: 'FAILED', error: 'Report generation failed.' });
+    expect(json).toMatchObject({ status: 'FAILED', error: 'Report generation failed.' });
+    expect(JSON.stringify(json)).not.toContain('internal-host');
   });
 
   it('points the PDF link at the token, not the id', async () => {
     db.submission.findUnique.mockResolvedValue({
       id: 'sub1', resultToken: TOKEN, status: 'COMPLETE', scoreBand: 'DEVELOPING', scoreHeadline: 55,
+      createdAt: new Date(),
       report: { coverJson: {}, scoreNarrativeJson: '', regulatoryMapJson: {}, shadowAiJson: '',
         opportunitiesJson: [], exposuresJson: [], upsellJson: '' },
     });

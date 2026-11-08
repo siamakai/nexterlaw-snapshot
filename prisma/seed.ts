@@ -3,7 +3,7 @@ dotenv.config();
 
 import { Pool } from 'pg';
 import { PrismaPg } from '@prisma/adapter-pg';
-import { PrismaClient } from '@prisma/client';
+import { PrismaClient, type FirmSizeBand } from '@prisma/client';
 import { KNOWLEDGE_BASE_ENTRIES } from '../src/lib/knowledge-base-seed';
 
 const pool = new Pool({ connectionString: process.env.DATABASE_URL });
@@ -32,7 +32,7 @@ async function main() {
         title: entry.title,
         bodyText: entry.bodyText,
         appliedToPracticeTypes: entry.appliedToPracticeTypes,
-        appliedToFirmSizes: entry.appliedToFirmSizes as any[],
+        appliedToFirmSizes: entry.appliedToFirmSizes as FirmSizeBand[],
         sourceReference: entry.sourceReference ?? null,
         weight: entry.weight,
         isActive: true,

@@ -1,7 +1,7 @@
 import type { DimensionKey } from '@/lib/constants';
 
 export type SelfAssessmentAnswer = 'YES' | 'NOT_SURE' | 'NO';
-export type FirmSizeBand = 'MICRO' | 'SMALL' | 'MEDIUM' | 'LARGE' | 'ENTERPRISE';
+export type FirmSizeBand = 'SOLE' | 'MICRO' | 'SMALL' | 'MEDIUM' | 'LARGE' | 'ENTERPRISE';
 export type EUFacingAnswer = 'YES' | 'NO' | 'NOT_SURE';
 export type ScoreBandLabel = 'EXPOSED' | 'DEVELOPING' | 'IN_CONTROL';
 
@@ -75,6 +75,24 @@ export interface GeneratedReportContent {
   opportunities: ReportOpportunity[];
   exposures: ReportExposure[];
   upsell: string;
+  // v2 sections (absent on reports generated before v2)
+  quickWins?: ReportQuickWin[];
+  intakeNote?: string;
+  plan90Day?: ReportPlanStep[];
+}
+
+export interface ReportQuickWin {
+  title: string;
+  action: string;
+  dimension: DimensionKey;
+}
+
+export interface ReportPlanStep {
+  /** e.g. "Days 1–30" */
+  window: string;
+  title: string;
+  action: string;
+  resourceId: string;
 }
 
 export interface SubmitResponse {
@@ -84,6 +102,10 @@ export interface SubmitResponse {
 
 export interface ReportStatusResponse {
   status: string;
+  /** Human-readable stage for the building screen, from the real pipeline status. */
+  stage?: string;
+  /** Seconds since the submission was created (for the 120 s fallback). */
+  elapsedSeconds?: number;
   scores?: ClearTrustScores;
   report?: GeneratedReportContent;
   pdfUrl?: string;

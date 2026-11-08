@@ -1,69 +1,27 @@
-import { CLEAR_TRUST_DIMENSIONS, SCORE_BANDS } from './constants';
-import type { SelfAssessmentAnswers, FirmSizeBand, ClearTrustScores, DimensionScore } from '@/types';
+import { CLEAR_TRUST_DIMENSIONS } from './constants';
+import { bandForScore, nextBand, type BandLabel, type BandMeta } from './bands';
+import type { SelfAssessmentAnswers, ClearTrustScores, DimensionScore, SelfAssessmentAnswer } from '@/types';
 
-// Base points per answer
-const BASE_POINTS = { YES: 10, NOT_SURE: 5, NO: 0 };
+/**
+ * CLEAR TRUST scoring.
+ *
+ * Each dimension: Yes = 100, Not sure = 50, No = 0. Headline = plain average.
+ *
+ * Until v2 there was a size/sensitivity weighting here, but it multiplied both
+ * the score and the maximum, so it cancelled out and the headline was already
+ * a plain average. It has been removed: results are identical to before.
+ * If weighting is wanted, implement a true weighted mean here (OPEN-DECISIONS #3).
+ */
+export const ANSWER_POINTS: Record<SelfAssessmentAnswer, number> = { YES: 100, NOT_SURE: 50, NO: 0 };
 
-// Weight multipliers per dimension × firm size — Security and Rights weigh heavier
-// for firms handling high-sensitivity matters (Criminal, Family, Immigration tend to
-// be smaller; Corporate/M&A and full-service tend to be larger).
-const DIMENSION_WEIGHTS: Record<string, Partial<Record<FirmSizeBand, number>>> = {
-  compliance:      { MICRO: 1.0, SMALL: 1.0, MEDIUM: 1.1, LARGE: 1.2, ENTERPRISE: 1.3 },
-  literacy:        { MICRO: 1.0, SMALL: 1.0, MEDIUM: 1.0, LARGE: 1.1, ENTERPRISE: 1.2 },
-  explainability:  { MICRO: 0.9, SMALL: 1.0, MEDIUM: 1.0, LARGE: 1.1, ENTERPRISE: 1.2 },
-  accountability:  { MICRO: 0.8, SMALL: 1.0, MEDIUM: 1.1, LARGE: 1.2, ENTERPRISE: 1.3 },
-  rights:          { MICRO: 1.1, SMALL: 1.1, MEDIUM: 1.2, LARGE: 1.3, ENTERPRISE: 1.4 },
-  transparency:    { MICRO: 1.0, SMALL: 1.0, MEDIUM: 1.0, LARGE: 1.0, ENTERPRISE: 1.1 },
-  reliability:     { MICRO: 1.0, SMALL: 1.0, MEDIUM: 1.1, LARGE: 1.1, ENTERPRISE: 1.2 },
-  usageGovernance: { MICRO: 0.9, SMALL: 1.0, MEDIUM: 1.1, LARGE: 1.2, ENTERPRISE: 1.3 },
-  security:        { MICRO: 1.1, SMALL: 1.2, MEDIUM: 1.3, LARGE: 1.4, ENTERPRISE: 1.5 },
-  traceability:    { MICRO: 1.0, SMALL: 1.0, MEDIUM: 1.1, LARGE: 1.2, ENTERPRISE: 1.3 },
-};
-
-// Practice types that raise the security/rights weight (high-sensitivity data)
-const HIGH_SENSITIVITY_PRACTICES = [
-  'criminal', 'family', 'immigration', 'private-client-wills-probate',
-];
-
-export function computeScores(
-  answers: SelfAssessmentAnswers,
-  firmSize: FirmSizeBand,
-  practiceTypes: string[],
-): ClearTrustScores {
-  const isHighSensitivity = practiceTypes.some(pt =>
-    HIGH_SENSITIVITY_PRACTICES.some(h => pt.includes(h.split('-')[0])),
-  );
-
+export function computeScores(answers: SelfAssessmentAnswers): ClearTrustScores {
   const dimensions: DimensionScore[] = CLEAR_TRUST_DIMENSIONS.map(dim => {
-    const answer = answers[dim.key];
-    const basePoints = answer ? BASE_POINTS[answer] : 0;
-    const sizeWeight = DIMENSION_WEIGHTS[dim.key]?.[firmSize] ?? 1.0;
-
-    // Boost security & rights by 10% for high-sensitivity practices
-    const sensitivityBoost =
-      isHighSensitivity && (dim.key === 'security' || dim.key === 'rights') ? 1.1 : 1.0;
-
-    // Raw weighted score (max would be 10 × weight)
-    const rawScore = basePoints * sizeWeight * sensitivityBoost;
-
-    // Max possible for this dimension
-    const maxScore = 10 * sizeWeight * sensitivityBoost;
-
-    // Normalise to 0–100
-    const score = Math.min(100, (rawScore / maxScore) * 100);
-
-    return {
-      key: dim.key,
-      name: dim.name,
-      letter: dim.letter,
-      score,
-      answer: answer || 'NO',
-    };
+    const answer = (answers[dim.key] || 'NO') as SelfAssessmentAnswer;
+    return { key: dim.key, name: dim.name, letter: dim.letter, score: ANSWER_POINTS[answer], answer };
   });
 
   const headline = dimensions.reduce((sum, d) => sum + d.score, 0) / dimensions.length;
-
-  const band = SCORE_BANDS.find(b => headline >= b.min && headline <= b.max) ?? SCORE_BANDS[2];
+  const band = bandForScore(headline);
 
   return {
     dimensions,
@@ -72,4 +30,37 @@ export function computeScores(
     bandDisplayName: band.displayName,
     bandColour: band.colour,
   };
+}
+
+export interface NextBandHint {
+  next: BandMeta | null;
+  pointsNeeded: number;
+  /** The fewest answers that would need to become "Yes", strongest gains first. */
+  changes: Array<{ key: string; name: string; from: SelfAssessmentAnswer }>;
+}
+
+/**
+ * "What moves you to the next band": the smallest set of answers that, if they
+ * became "Yes", would lift the headline into the next band. No → Yes adds 10
+ * points to the headline, Not sure → Yes adds 5.
+ */
+export function nextBandHint(scores: Pick<ClearTrustScores, 'dimensions' | 'headline' | 'band'>): NextBandHint {
+  const next = nextBand(scores.band as BandLabel);
+  if (!next) return { next: null, pointsNeeded: 0, changes: [] };
+
+  const pointsNeeded = Math.max(0, next.min - scores.headline);
+  const perDimension = 100 / scores.dimensions.length;
+  const candidates = scores.dimensions
+    .filter(d => d.answer !== 'YES')
+    .map(d => ({ key: d.key, name: d.name, from: d.answer, gain: ((100 - d.score) / 100) * perDimension }))
+    .sort((a, b) => b.gain - a.gain);
+
+  const changes: NextBandHint['changes'] = [];
+  let gained = 0;
+  for (const c of candidates) {
+    if (gained >= pointsNeeded) break;
+    changes.push({ key: c.key, name: c.name, from: c.from });
+    gained += c.gain;
+  }
+  return { next, pointsNeeded, changes };
 }

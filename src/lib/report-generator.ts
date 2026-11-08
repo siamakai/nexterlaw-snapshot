@@ -1,5 +1,21 @@
 import Anthropic from '@anthropic-ai/sdk';
 import type { IntakeData, ClearTrustScores, GeneratedReportContent } from '@/types';
+import { CLEAR_TRUST_DIMENSIONS } from './constants';
+import { RESOURCES, RESOURCE_IDS } from '@/config/resources';
+import { INTAKE_QUESTIONS, intakeLabel, type IntakeAnswers, type IntakeRating } from './intake';
+import { APPROVED_REFERENCES } from '../../content/approved-references';
+import { mockReport } from './report-fixture';
+
+/** Saved with every report (Submission.promptVersion). Bump when the prompt or tool schema changes. */
+export const PROMPT_VERSION = '2026-11-08.v2';
+
+/** Extra per-firm context added in v2. */
+export interface ReportContext {
+  intakeAnswers?: Partial<IntakeAnswers> | null;
+  intakeRating?: IntakeRating | null;
+  /** Used on regeneration after the reference check fails. */
+  correction?: string;
+}
 
 interface KBEntry {
   title: string;
@@ -27,7 +43,16 @@ export interface GenerationResult {
   estimatedCostUsd: number;
 }
 
-const MODEL = 'claude-opus-4-8';
+// Model can be switched by env after the comparison test (OPEN-DECISIONS #12).
+const MODEL = (process.env.REPORT_MODEL ?? '').trim() || 'claude-opus-4-8';
+
+/**
+ * Local development and automated tests only: REPORT_GENERATOR_MODE=mock returns a
+ * clearly-labelled sample report without calling the API. Ignored in production.
+ */
+export function isMockMode(): boolean {
+  return process.env.REPORT_GENERATOR_MODE === 'mock' && process.env.NODE_ENV !== 'production';
+}
 const MAX_RETRIES = 2;
 
 // Anthropic pricing as of 2026-07 (per 1M tokens)
@@ -60,7 +85,8 @@ function estimateCost(
 }
 
 const FIRM_SIZE_LABELS: Record<string, string> = {
-  MICRO: '1–4 fee-earners',
+  SOLE: 'Sole practitioner (just me)',
+  MICRO: '2–4 fee-earners',
   SMALL: '5–20 fee-earners',
   MEDIUM: '21–50 fee-earners',
   LARGE: '51–200 fee-earners',
@@ -97,13 +123,20 @@ ${
 
 GROUNDING RULE: You may only draw on the knowledge base entries provided in the user message. Do not add regulatory claims, tool names, risk descriptions, or legal guidance not present in those entries.
 
+NOT SURE RULE: Where the firm answered "Not sure" (NOT_SURE), describe it as uncertainty to be checked; never state that the control does not exist. Only a "No" answer means the firm has said the control is absent.
+
+CITATION RULE: Name regulatory instruments in general terms (for example "the SRA Code of Conduct", "UK GDPR", "the EU AI Act"). Do not cite pinpoint numbers (paragraph, rule, principle, article, section, annex, chapter or title numbers), even if a knowledge base entry contains one, unless the exact citation appears in this approved list: ${APPROVED_REFERENCES.length ? APPROVED_REFERENCES.map(r => r.text).join('; ') : '(none approved yet)'}.
+
 CONTENT REQUIREMENTS:
 - scoreNarrative: 4–6 paragraphs — headline score meaning, strongest dimensions, dimensions needing attention, forward-looking statement
 - Each regulatoryMap field: 2–3 paragraphs
 - shadowAi: 2–3 paragraphs on the risk of fee-earners using unapproved AI tools
 - opportunities: 3–5 items. Each opportunity must be drawn from the knowledge base entries provided and must be directly relevant to this firm's specific practice areas and size. Do not include a generic opportunity that could apply to any law firm regardless of practice type.
 - exposures: 3–5 items, severity must be HIGH, MEDIUM, or LOW. Severity must reflect the firm's actual self-assessment answers and dimension scores: where the firm answered YES to the relevant dimension, severity should be LOW or that risk should be omitted; NOT SURE warrants MEDIUM; NO warrants HIGH. Do not assign HIGH severity to a risk area where the firm's answers already demonstrate good practice.
-- upsell: 2–3 sentences. Reference this firm's specific headline score, their CLEAR TRUST band (Exposed, Developing, or In Control), and at least one specific dimension where their score indicates room for improvement. Do not write a generic invitation that could apply to any firm.`;
+- upsell: 2–3 sentences. Reference this firm's specific headline score, their CLEAR TRUST band (Exposed, Developing, or In Control), and at least one specific dimension where their score indicates room for improvement. Do not write a generic invitation that could apply to any firm.
+- quickWins: exactly 3. Each is one concrete action the firm can take within a week, tied to one of its weakest dimensions (No first, then Not sure). Do not recommend buying a product.
+- intakeNote: 2–3 sentences on how the firm handles new client enquiries, based only on its client-intake answers and the Intake Opportunity rating. Factual, no statistics, no product names. If the answers are missing, say the firm did not provide intake details.
+- plan90Day: exactly 3 steps (Days 1–30, Days 31–60, Days 61–90), each building on the last and tied to the firm's weakest dimensions. Each step must pick one resourceId from the resources list in the user message that fits the step.`;
 }
 
 // Returns the knowledge-base block (large) and the firm-specific block separately so
@@ -117,6 +150,7 @@ function buildUserPromptParts(
   scores: ClearTrustScores,
   kb: RetrievedKB,
   includeEuAiAct: boolean,
+  ctx: ReportContext = {},
 ): { kbText: string; firmText: string } {
   const kbSections = [
     formatKBSection(kb.regulatory, 'Regulatory Guidance'),
@@ -128,8 +162,13 @@ function buildUserPromptParts(
     .filter(Boolean)
     .join('\n\n');
 
+  const resourcesText = RESOURCES
+    .map(r => `- ${r.id}: ${r.title} — ${r.description} (helps with: ${r.dimensions.join(', ')})`)
+    .join('\n');
+
   const kbText =
-    `## KNOWLEDGE BASE ENTRIES\nUse ONLY the entries below for all regulatory, risk, and tool-category claims.\n\n${kbSections}`;
+    `## KNOWLEDGE BASE ENTRIES\nUse ONLY the entries below for all regulatory, risk, and tool-category claims.\n\n${kbSections}` +
+    `\n\n## RESOURCES FOR THE 90-DAY PLAN\nPick resourceId values from this list only.\n${resourcesText}`;
 
   const dimTable = scores.dimensions
     .map(
@@ -137,6 +176,11 @@ function buildUserPromptParts(
         `  ${d.letter}. ${d.name}: ${Math.round(d.score)}/100 (self-assessed: ${d.answer})`,
     )
     .join('\n');
+
+  const intakeText = ctx.intakeAnswers && Object.values(ctx.intakeAnswers).some(Boolean)
+    ? INTAKE_QUESTIONS.map(q => `- ${q.question} ${intakeLabel(q.key, ctx.intakeAnswers?.[q.key])}`).join('\n') +
+      `\nIntake Opportunity rating: ${ctx.intakeRating ?? 'MEDIUM'}`
+    : 'Not provided.';
 
   const reportDate = new Date().toLocaleDateString('en-GB', {
     month: 'long',
@@ -148,7 +192,7 @@ function buildUserPromptParts(
 ## FIRM PROFILE
 - Name: ${intake.firmName}
 - Website: ${intake.firmWebsite || 'Not provided'}
-- Location: ${intake.city}, ${intake.country}
+- Location: ${[intake.city, intake.country].filter(Boolean).join(', ')}
 - Practice area(s): ${intake.practiceTypes.join(', ')}
 - Firm size: ${FIRM_SIZE_LABELS[intake.firmSize as string] ?? intake.firmSize}
 - EU-facing work: ${intake.euFacing}
@@ -158,7 +202,10 @@ function buildUserPromptParts(
 Headline score: ${Math.round(scores.headline)}/100 — ${scores.bandDisplayName}
 
 Dimension scores:
-${dimTable}`;
+${dimTable}
+
+## CLIENT INTAKE (not part of the CLEAR TRUST score)
+${intakeText}${ctx.correction ? `\n\n## CORRECTION REQUIRED\n${ctx.correction}` : ''}`;
 
   return { kbText, firmText };
 }
@@ -263,6 +310,41 @@ function buildReportTool(includeEuAiAct: boolean): Anthropic.Tool {
           type: 'string',
           description: '2–3 sentences: professional invitation to discuss AI governance support with NexterLaw',
         },
+        quickWins: {
+          type: 'array',
+          description: 'Exactly 3 actions the firm can take within a week',
+          items: {
+            type: 'object',
+            properties: {
+              title: { type: 'string', description: '3–7 words' },
+              action: { type: 'string', description: '1–2 sentences: what to do and who should do it' },
+              dimension: { type: 'string', enum: CLEAR_TRUST_DIMENSIONS.map(d => d.key) },
+            },
+            required: ['title', 'action', 'dimension'],
+          },
+          minItems: 3,
+          maxItems: 3,
+        },
+        intakeNote: {
+          type: 'string',
+          description: "2–3 sentences on the firm's client-intake handling, from its intake answers",
+        },
+        plan90Day: {
+          type: 'array',
+          description: 'Exactly 3 steps: Days 1–30, Days 31–60, Days 61–90',
+          items: {
+            type: 'object',
+            properties: {
+              window: { type: 'string', enum: ['Days 1–30', 'Days 31–60', 'Days 61–90'] },
+              title: { type: 'string', description: '3–7 words' },
+              action: { type: 'string', description: '1–2 sentences' },
+              resourceId: { type: 'string', enum: RESOURCE_IDS },
+            },
+            required: ['window', 'title', 'action', 'resourceId'],
+          },
+          minItems: 3,
+          maxItems: 3,
+        },
       },
       required: [
         'cover',
@@ -272,6 +354,9 @@ function buildReportTool(includeEuAiAct: boolean): Anthropic.Tool {
         'opportunities',
         'exposures',
         'upsell',
+        'quickWins',
+        'intakeNote',
+        'plan90Day',
       ],
     },
   };
@@ -281,7 +366,12 @@ function buildReportTool(includeEuAiAct: boolean): Anthropic.Tool {
 // Instantiated once at module load — avoids re-creating the Anthropic client and
 // rebuilding the large tool schema on every report generation call.
 
-const client = new Anthropic({ apiKey: process.env.ANTHROPIC_API_KEY });
+// Created lazily so importing this module (tests, mock mode) never needs a key.
+let anthropic: Anthropic | null = null;
+function client(): Anthropic {
+  anthropic ??= new Anthropic({ apiKey: process.env.ANTHROPIC_API_KEY });
+  return anthropic;
+}
 
 const SYSTEM_PROMPT_EU    = buildSystemPrompt(true);
 const SYSTEM_PROMPT_NO_EU = buildSystemPrompt(false);
@@ -295,18 +385,27 @@ export async function generateReport(
   intake: IntakeData,
   scores: ClearTrustScores,
   kb: RetrievedKB,
+  ctx: ReportContext = {},
 ): Promise<GenerationResult> {
   const includeEuAiAct = intake.euFacing === 'YES' || intake.euFacing === 'NOT_SURE';
 
+  if (isMockMode()) {
+    const report = mockReport(intake.firmName, scores, includeEuAiAct, ctx.intakeRating ?? null);
+    return {
+      report, rawResponse: JSON.stringify(report), modelUsed: 'mock', requestId: 'mock',
+      inputTokens: 0, outputTokens: 0, cacheWriteTokens: 0, cacheReadTokens: 0, estimatedCostUsd: 0,
+    };
+  }
+
   const tool         = includeEuAiAct ? REPORT_TOOL_EU    : REPORT_TOOL_NO_EU;
   const systemPrompt = includeEuAiAct ? SYSTEM_PROMPT_EU  : SYSTEM_PROMPT_NO_EU;
-  const { kbText, firmText } = buildUserPromptParts(intake, scores, kb, includeEuAiAct);
+  const { kbText, firmText } = buildUserPromptParts(intake, scores, kb, includeEuAiAct, ctx);
 
   let lastError: Error = new Error('Report generation failed');
 
   for (let attempt = 0; attempt <= MAX_RETRIES; attempt++) {
     try {
-      const message = await client.messages.create({
+      const message = await client().messages.create({
         model: MODEL,
         max_tokens: 16000,
         // system as an array lets us attach cache_control to the text block.
@@ -354,6 +453,9 @@ export async function generateReport(
       }
 
       const report = toolBlock.input;
+      // Keep only resource ids we know, and at most 3 of each list.
+      if (report.plan90Day) report.plan90Day = report.plan90Day.filter(p => RESOURCE_IDS.includes(p.resourceId)).slice(0, 3);
+      if (report.quickWins) report.quickWins = report.quickWins.slice(0, 3);
 
       // Hard guard: strip EU AI Act section if firm is not EU-facing
       if (!includeEuAiAct && report.regulatoryMap.euAiAct) {

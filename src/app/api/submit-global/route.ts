@@ -1,18 +1,27 @@
+import { after } from 'next/server';
 import { z } from 'zod';
+import type { Prisma } from '@prisma/client';
 import { prisma } from '@/lib/db/prisma';
-import { sendGlobalSubmissionNotification } from '@/lib/email';
+import { sendGlobalAcknowledgement, sendGlobalSubmissionNotification } from '@/lib/email';
 import { checkRateLimit, getClientIp, tooManyRequests } from '@/lib/security/rate-limit';
-
-const AnswerEnum = z.enum(['YES', 'NO', 'NOT_SURE']);
-const YesNoEnum = z.enum(['YES', 'NO']);
+import { generateResultToken } from '@/lib/security/tokens';
+import { AnswerEnum, ConsentSchema, IntakeAnswersSchema, SelfAssessmentSchema, WebsiteSchema } from '@/lib/validation';
+import { computeScores } from '@/lib/scoring';
+import { intakeRating } from '@/lib/intake';
+import { isTestSubmission } from '@/lib/test-submissions';
+import { syncToCrm } from '@/lib/crm/ghl';
+import { generateGlobalDraft } from '@/lib/global-draft';
+import { isMockMode } from '@/lib/report-generator';
+import { formatDue } from '@/lib/dates';
+import { SITE } from '@/config/site';
 
 const SubmitGlobalSchema = z.object({
   contact: z.object({
-    contactName: z.string().min(1).max(200),
-    firmName: z.string().min(1).max(200),
-    firmWebsite: z.string().max(500).default(''),
-    workEmail: z.string().email().max(200),
-    phone: z.string().max(50).default(''),
+    contactName: z.string().trim().min(1).max(200),
+    firmName: z.string().trim().min(1).max(200),
+    firmWebsite: WebsiteSchema,
+    workEmail: z.string().trim().email().max(200),
+    phone: z.string().trim().max(50).default(''),
   }),
   jurisdiction: z.object({
     country: z.string().min(1).max(100),
@@ -33,23 +42,15 @@ const SubmitGlobalSchema = z.object({
     hasAiPolicy: AnswerEnum,
     clientsAskedAboutAi: AnswerEnum,
   }),
-  selfAssessment: z.object({
-    compliance: AnswerEnum,
-    literacy: AnswerEnum,
-    explainability: AnswerEnum,
-    accountability: AnswerEnum,
-    rights: AnswerEnum,
-    transparency: AnswerEnum,
-    reliability: AnswerEnum,
-    usageGovernance: AnswerEnum,
-    security: AnswerEnum,
-    traceability: AnswerEnum,
-  }),
+  selfAssessment: SelfAssessmentSchema,
+  intakeAnswers: IntakeAnswersSchema,
   additionalContext: z.object({
     biggestConcern: z.string().max(2000).default(''),
     whatWouldHelpMost: z.string().max(2000).default(''),
-    contactPermission: YesNoEnum,
   }),
+  consent: ConsentSchema,
+  /** The firm's IANA time zone (from the browser), for the due-date wording. */
+  timeZone: z.string().max(64).default('Europe/London'),
 });
 
 export async function POST(request: Request) {
@@ -66,19 +67,25 @@ export async function POST(request: Request) {
 
   const parsed = SubmitGlobalSchema.safeParse(body);
   if (!parsed.success) {
-    return Response.json(
-      { error: 'Validation failed', issues: parsed.error.issues },
-      { status: 422 },
-    );
+    return Response.json({ error: 'Please check the highlighted answers and try again.', issues: parsed.error.issues }, { status: 422 });
   }
 
-  const { contact, jurisdiction, firmProfile, currentAiUse, selfAssessment, additionalContext } = parsed.data;
+  const { contact, jurisdiction, firmProfile, currentAiUse, selfAssessment, intakeAnswers, additionalContext, consent, timeZone } = parsed.data;
 
   const emailLimit = await checkRateLimit('submitGlobalEmail', contact.workEmail);
   if (!emailLimit.allowed) return tooManyRequests(emailLimit);
 
+  const scores = computeScores(selfAssessment);
+  const rating = intakeRating(intakeAnswers);
+  const isTest = isTestSubmission(contact.workEmail, contact.firmName);
+  const now = new Date();
+  // Waitlist: no promise of a date while the team is at capacity.
+  const dueAt = SITE.global.waitlist ? null : new Date(now.getTime() + SITE.global.turnaroundHours * 3600_000);
+  const dueText = dueAt ? formatDue(dueAt, timeZone) : null;
+
   const submission = await prisma.globalSubmission.create({
     data: {
+      resultToken: generateResultToken(),
       contactName: contact.contactName,
       firmName: contact.firmName,
       firmWebsite: contact.firmWebsite || null,
@@ -112,20 +119,45 @@ export async function POST(request: Request) {
       answerSecurity: selfAssessment.security,
       answerTraceability: selfAssessment.traceability,
 
+      intakeOutOfHours: intakeAnswers.outOfHours || null,
+      intakeReplySpeed: intakeAnswers.replySpeed || null,
+      intakeVolume: intakeAnswers.volume || null,
+      intakeCaseSystem: intakeAnswers.caseSystem || null,
+      intakeRating: rating,
+      route: 'GLOBAL',
+
+      scoreHeadline: scores.headline,
+      scoreBand: scores.band,
+
       biggestConcern: additionalContext.biggestConcern || null,
       whatWouldHelpMost: additionalContext.whatWouldHelpMost || null,
-      contactPermission: additionalContext.contactPermission === 'YES',
-      consentAt: new Date(),
-
+      // Kept for the existing admin screens: same meaning as marketing consent.
+      contactPermission: consent.marketing,
+      consentAt: now,
+      marketingConsent: consent.marketing,
+      marketingConsentAt: consent.marketing ? now : null,
+      privacyVersion: SITE.privacyVersion,
+      isTest,
+      dueAt,
       status: 'PENDING',
     },
   });
 
-  // Notify the internal team inline — this is a fast DB write with no
-  // generation pipeline behind it, unlike the UK flow's /api/submit, so there's
-  // no need for a background function. Non-fatal: a failed notification email
-  // must not fail the submitter's request.
-  try {
+  // Emails, CRM and the AI draft run after the response, so the firm isn't kept waiting.
+  after(async () => {
+    try {
+      await sendGlobalAcknowledgement({
+        to: contact.workEmail,
+        contactName: contact.contactName,
+        country: jurisdiction.country,
+        dueText: dueText ?? 'as soon as a slot opens',
+        scores: SITE.global.showScore ? scores : null,
+      });
+      await prisma.globalSubmission.update({ where: { id: submission.id }, data: { acknowledgedAt: new Date() } });
+    } catch (err) {
+      console.error('[submit-global] Acknowledgement email failed:', err);
+    }
+
     await sendGlobalSubmissionNotification({
       submissionId: submission.id,
       contactName: contact.contactName,
@@ -134,10 +166,53 @@ export async function POST(request: Request) {
       country: jurisdiction.country,
       stateProvince: jurisdiction.stateProvince,
       primaryPracticeArea: firmProfile.primaryPracticeArea,
-    });
-  } catch (err) {
-    console.error('[submit-global] Internal notification email failed:', err);
-  }
+      dueText: dueText ?? 'waitlist',
+      isTest,
+    }).catch(err => console.error('[submit-global] Team notification failed:', err));
 
-  return Response.json({ submissionId: submission.id }, { status: 201 });
+    await syncToCrm({
+      event: 'global_submitted',
+      email: contact.workEmail,
+      firmName: contact.firmName,
+      firmWebsite: contact.firmWebsite,
+      contactName: contact.contactName,
+      phone: contact.phone,
+      country: jurisdiction.country,
+      path: 'global',
+      band: scores.band,
+      score: scores.headline,
+      sizeKey: firmProfile.firmSize,
+      intakeRating: rating,
+      route: 'GLOBAL',
+      marketingConsent: consent.marketing,
+      isTest,
+      dueAt,
+    }).catch(err => console.error('[submit-global] CRM sync failed:', err));
+
+    // AI first draft for the reviewer. Skipped for test submissions unless in mock mode (no cost).
+    if (!isTest || isMockMode()) {
+      try {
+        const draft = await generateGlobalDraft(submission);
+        await prisma.globalSubmission.update({
+          where: { id: submission.id },
+          data: { reportDraftJson: draft as unknown as Prisma.InputJsonValue, reportDraftAt: new Date(), status: 'RESEARCHING' },
+        });
+      } catch (err) {
+        console.error('[submit-global] AI draft failed (team can still write the report by hand):', err);
+      }
+    }
+  });
+
+  return Response.json(
+    {
+      submissionId: submission.id,
+      resultToken: submission.resultToken,
+      dueText,
+      waitlist: SITE.global.waitlist,
+      scores: SITE.global.showScore
+        ? { headline: scores.headline, band: scores.band, bandDisplayName: scores.bandDisplayName, bandColour: scores.bandColour }
+        : null,
+    },
+    { status: 201 },
+  );
 }
