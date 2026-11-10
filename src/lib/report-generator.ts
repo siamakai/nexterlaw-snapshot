@@ -7,12 +7,14 @@ import { APPROVED_REFERENCES } from '../../content/approved-references';
 import { mockReport } from './report-fixture';
 
 /** Saved with every report (Submission.promptVersion). Bump when the prompt or tool schema changes. */
-export const PROMPT_VERSION = '2026-11-08.v2';
+export const PROMPT_VERSION = '2026-11-10.v2.1';
 
 /** Extra per-firm context added in v2. */
 export interface ReportContext {
   intakeAnswers?: Partial<IntakeAnswers> | null;
   intakeRating?: IntakeRating | null;
+  /** Who offers this firm's next step, exactly as the upsell paragraph must name it. */
+  nextStepProvider?: string | null;
   /** Used on regeneration after the reference check fails. */
   correction?: string;
 }
@@ -205,7 +207,10 @@ Dimension scores:
 ${dimTable}
 
 ## CLIENT INTAKE (not part of the CLEAR TRUST score)
-${intakeText}${ctx.correction ? `\n\n## CORRECTION REQUIRED\n${ctx.correction}` : ''}`;
+${intakeText}
+
+## NEXT STEP PROVIDER
+In the upsell paragraph, the organisation offering to help is: ${ctx.nextStepProvider ?? 'NexterLaw'}. Name it exactly in those words; do not name any other organisation as the one offering help.${ctx.correction ? `\n\n## CORRECTION REQUIRED\n${ctx.correction}` : ''}`;
 
   return { kbText, firmText };
 }
@@ -308,7 +313,7 @@ function buildReportTool(includeEuAiAct: boolean): Anthropic.Tool {
         },
         upsell: {
           type: 'string',
-          description: '2–3 sentences: professional invitation to discuss AI governance support with NexterLaw',
+          description: '2–3 sentences: professional invitation to discuss support with the organisation named under NEXT STEP PROVIDER',
         },
         quickWins: {
           type: 'array',

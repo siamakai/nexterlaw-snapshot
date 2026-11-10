@@ -29,6 +29,20 @@ interface RouteDef {
   secondary: { label: string; destination: DestinationId };
 }
 
+/**
+ * How the report's next-step paragraph names the provider of the next step
+ * (decided 10 Nov 2026: agency offers are presented as our service provision partner).
+ */
+export const PROVIDER_PHRASE: Record<Brand, string> = {
+  'NexterLaw': 'NexterLaw',
+  'Nexter AI Agency': 'Nexter AI Agency, our service provision partner',
+  'Skool': 'the Nexter AI Business Club',
+};
+
+export function providerPhraseFor(route: RouteId | null | undefined): string {
+  return PROVIDER_PHRASE[ROUTES[route ?? 'SNAPSHOT_REVIEW']?.brand ?? 'NexterLaw'];
+}
+
 export const ROUTES: Record<RouteId, RouteDef> = {
   GLOBAL: {
     brand: 'NexterLaw',

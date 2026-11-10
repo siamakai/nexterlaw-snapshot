@@ -9,7 +9,7 @@ import { answersFromRow, reportColumns, scoreFieldsFor } from './report-data';
 import { checkReport, stripUnapprovedCitations, unapproved, type CitationFinding } from './reference-check';
 import { syncToCrm } from './crm/ghl';
 import { resultsUrl } from './urls';
-import { resolveNextStep, type RouteId } from '@/config/next-steps';
+import { providerPhraseFor, resolveNextStep, type RouteId } from '@/config/next-steps';
 import type { IntakeData, ClearTrustScores } from '@/types';
 import type { IntakeRating } from './intake';
 
@@ -137,6 +137,7 @@ export async function runGenerationPipeline(submissionId: string): Promise<void>
         caseSystem: submission.intakeCaseSystem ?? '',
       },
       intakeRating: (submission.intakeRating as IntakeRating | null) ?? null,
+      nextStepProvider: providerPhraseFor(submission.route as RouteId | null),
     };
 
     const { result, passed, errors } = await generateWithReferenceCheck(

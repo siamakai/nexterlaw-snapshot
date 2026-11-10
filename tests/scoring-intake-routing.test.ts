@@ -123,3 +123,14 @@ describe('test submissions and website check', () => {
     for (const bad of ['smith', 'not a website', 'http://', 'www']) expect(isLikelyWebsite(bad)).toBe(false);
   });
 });
+
+describe('next-step provider wording in the report', () => {
+  it('agency routes name Nexter AI Agency as our service provision partner', async () => {
+    const { providerPhraseFor } = await import('@/config/next-steps');
+    expect(providerPhraseFor('INTAKE_REVIEW')).toBe('Nexter AI Agency, our service provision partner');
+    expect(providerPhraseFor('SNAPSHOT_REVIEW')).toBe('Nexter AI Agency, our service provision partner');
+    expect(providerPhraseFor('GOVERNANCE_REVIEW')).toBe('NexterLaw');
+    expect(providerPhraseFor('GLOBAL')).toBe('NexterLaw');
+    expect(providerPhraseFor('SKOOL')).toBe('the Nexter AI Business Club');
+  });
+});
