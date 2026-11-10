@@ -319,12 +319,25 @@ function Building({ data }: { data: ResultDto }) {
           </p>
         </div>
       )}
-      <div className="grid grid-cols-5 sm:grid-cols-10 gap-2 mb-6" aria-hidden="true">
-        {CLEAR_TRUST_DIMENSIONS.map((d, i) => (
-          <div key={d.key} className="animate-pulse" style={{ aspectRatio: '1', backgroundColor: GOLD, opacity: 0.85, borderRadius: 6, display: 'flex', alignItems: 'center', justifyContent: 'center', animationDelay: `${i * 120}ms` }}>
-            <span style={{ color: R_BG, fontFamily: 'var(--font-playfair)', fontWeight: 700, fontSize: 22, lineHeight: 1 }}>{d.letter}</span>
-          </div>
-        ))}
+      {/* While they wait: what CLEAR TRUST stands for (C-L-E-A-R on the left, T-R-U-S-T on the right). */}
+      <div className="mb-6">
+        <p className="text-center mb-4" style={{ color: GOLD, fontSize: 11, letterSpacing: '0.35em', textTransform: 'uppercase', fontWeight: 600 }}>
+          What CLEAR TRUST stands for
+        </p>
+        <ol className="grid grid-cols-1 sm:grid-cols-2 gap-x-8 gap-y-3 sm:grid-flow-col sm:grid-rows-5">
+          {CLEAR_TRUST_DIMENSIONS.map((d, i) => (
+            <li key={d.key} className="flex items-start gap-3">
+              <span aria-hidden="true" className="animate-pulse shrink-0 flex items-center justify-center"
+                style={{ width: 40, height: 40, backgroundColor: GOLD, borderRadius: 6, animationDelay: `${i * 150}ms`, animationDuration: '2.4s' }}>
+                <span style={{ color: R_BG, fontFamily: 'var(--font-playfair)', fontWeight: 700, fontSize: 20, lineHeight: 1 }}>{d.letter}</span>
+              </span>
+              <span>
+                <span className="block" style={{ color: R_CREAM, fontSize: '0.9rem', fontWeight: 600 }}>{d.name}</span>
+                <span className="block" style={{ color: R_BODY, fontSize: '0.78rem', lineHeight: 1.5 }}>{d.description}</span>
+              </span>
+            </li>
+          ))}
+        </ol>
       </div>
       <p className="text-xs text-center" style={{ color: R_MUTED }}>This usually takes about a minute. You can keep this page open, or close it: the report will also be emailed to you.</p>
     </section>

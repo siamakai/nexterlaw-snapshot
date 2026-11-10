@@ -11,11 +11,14 @@ type DestinationId = 'governanceCall' | 'intakeReview' | 'snapshotReview' | 'web
 
 const env = (name: string) => (process.env[name] ?? '').trim();
 
-/** Destination URLs. Names only here; values live in Vercel env vars. */
+/**
+ * Destination URLs. A Vercel env var overrides; otherwise the confirmed link below is used.
+ * Confirmed by Siamak, 10 Nov 2026: intake review → https://nexterai.agency/booking
+ */
 function destinations(): Record<DestinationId, string> {
   return {
     governanceCall: env('NEXT_STEP_GOVERNANCE_CALL_URL') || env('CALENDLY_BOOKING_URL'),
-    intakeReview:   env('NEXT_STEP_INTAKE_REVIEW_URL'),
+    intakeReview:   env('NEXT_STEP_INTAKE_REVIEW_URL') || 'https://nexterai.agency/booking',
     snapshotReview: env('NEXT_STEP_SNAPSHOT_REVIEW_URL') || env('CALENDLY_BOOKING_URL'),
     webinar:        env('NEXT_STEP_WEBINAR_URL'),
     skool:          env('NEXT_STEP_SKOOL_URL'),
