@@ -14,6 +14,11 @@
 #  - The migrations only ADD columns/values, so the current live site keeps working.
 # Take a backup/snapshot in your database provider's dashboard first if you can.
 
+param(
+    # Testing only: run against a LOCAL rehearsal database instead of asking for production.
+    [string]$RehearsalUrl = ''
+)
+
 $ErrorActionPreference = 'Stop'
 $repo = Split-Path -Parent $PSScriptRoot
 Set-Location $repo
@@ -21,22 +26,37 @@ Set-Location $repo
 $liveSchema = Join-Path $env:TEMP 'nexterlaw-schema-live.prisma'
 
 try {
-    Write-Host '1/4 Paste the PRODUCTION database connection string (input is hidden), then press Enter:' -ForegroundColor Cyan
-    $secure = Read-Host -AsSecureString
-    $bstr = [Runtime.InteropServices.Marshal]::SecureStringToBSTR($secure)
-    try { $url = [Runtime.InteropServices.Marshal]::PtrToStringBSTR($bstr).Trim().Trim('"') }
-    finally { [Runtime.InteropServices.Marshal]::ZeroFreeBSTR($bstr) }
-    if ($url -notmatch '^postgres(ql)?://') { throw 'That does not look like a Postgres connection string (it should start with postgres:// or postgresql://). Nothing was changed.' }
-    if ($url -match 'localhost|127\.0\.0\.1') { throw 'That is a local database, not production. Nothing was changed.' }
+    if ($RehearsalUrl) {
+        if ($RehearsalUrl -notmatch 'localhost|127\.0\.0\.1') { throw '-RehearsalUrl must be a local database.' }
+        Write-Host '1/4 REHEARSAL against a local database' -ForegroundColor Magenta
+        $url = $RehearsalUrl
+    } else {
+        Write-Host '1/4 Paste the PRODUCTION database connection string (input is hidden), then press Enter:' -ForegroundColor Cyan
+        $secure = Read-Host -AsSecureString
+        $bstr = [Runtime.InteropServices.Marshal]::SecureStringToBSTR($secure)
+        try { $url = [Runtime.InteropServices.Marshal]::PtrToStringBSTR($bstr).Trim().Trim('"') }
+        finally { [Runtime.InteropServices.Marshal]::ZeroFreeBSTR($bstr) }
+        if ($url -notmatch '^postgres(ql)?://') { throw 'That does not look like a Postgres connection string (it should start with postgres:// or postgresql://). Nothing was changed.' }
+        if ($url -match 'localhost|127\.0\.0\.1') { throw 'That is a local database, not production. Nothing was changed.' }
+    }
     $env:DATABASE_URL = $url
     Remove-Variable url
 
     Write-Host '2/4 Checking production matches the live schema (f85df8a)...' -ForegroundColor Cyan
     # WriteAllText writes UTF-8 without a BOM (Out-File in PowerShell 5 adds one, which Prisma rejects).
     [IO.File]::WriteAllText($liveSchema, (git show f85df8a:prisma/schema.prisma | Out-String))
-    npx prisma migrate diff --from-config-datasource --to-schema $liveSchema --exit-code | Out-Null
-    if ($LASTEXITCODE -eq 2) { throw 'Production differs from the live schema. Nothing was changed. Send this message to Claude.' }
+    # Only stdout is captured: Prisma writes notices to stderr, which PowerShell 5 would turn into errors.
+    $diff = npx prisma migrate diff --from-config-datasource --to-schema $liveSchema --script | Out-String
     if ($LASTEXITCODE -ne 0) { throw 'Could not connect or compare schemas (check the connection string). Nothing was changed.' }
+    # Ignore Neon's built-in sample table "playing_with_neon"; any other difference stops the script.
+    $statements = ($diff -split ';') |
+        ForEach-Object { ($_ -split "`n" | Where-Object { $_ -notmatch '^\s*--' -and $_ -notmatch 'Loaded Prisma config|injected env' }) -join "`n" } |
+        Where-Object { $_.Trim() -ne '' -and $_ -notmatch 'playing_with_neon' }
+    if ($statements) {
+        Write-Host 'Differences found (schema only, no data):' -ForegroundColor Yellow
+        $statements | ForEach-Object { Write-Host ($_.Trim()) }
+        throw 'Production differs from the live schema. Nothing was changed. Send the lines above to Claude.'
+    }
     Write-Host '    Match. Safe to continue.' -ForegroundColor Green
 
     Write-Host '3/4 Recording the starting point (0_init) and applying the new migrations...' -ForegroundColor Cyan
