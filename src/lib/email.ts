@@ -5,11 +5,12 @@ import { SITE } from '@/config/site';
 import { escapeHtml } from '@/lib/security/tokens';
 import { absoluteUrl } from '@/lib/urls';
 
-// From address: env if set, else the existing no-reply address. Replies go to the
-// contact inbox, so "reply to this email" now reaches a person (OPEN-DECISIONS N3).
-const FROM_ADDRESS = process.env.RESEND_FROM_ADDRESS
-  ? `${process.env.RESEND_FROM_NAME || 'NexterLaw'} <${process.env.RESEND_FROM_ADDRESS}>`
-  : 'NexterLaw <no-reply@nexterlaw.com>';
+// Sender: emails go out as "Nexter AI Agency" from the verified mail.nexterai.agency
+// domain (decided 10 Nov 2026). RESEND_FROM_NAME / RESEND_FROM_ADDRESS override if set.
+// Replies go to the contact inbox, so "reply to this email" reaches a person.
+const FROM_NAME = (process.env.RESEND_FROM_NAME ?? '').trim() || 'Nexter AI Agency';
+const FROM_EMAIL = (process.env.RESEND_FROM_ADDRESS ?? '').trim() || 'snapshot@mail.nexterai.agency';
+const FROM_ADDRESS = `${FROM_NAME} <${FROM_EMAIL}>`;
 const REPLY_TO = SITE.contactEmail;
 
 const NAVY = '#1a3a6b';
