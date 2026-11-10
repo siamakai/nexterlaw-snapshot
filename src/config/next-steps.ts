@@ -13,13 +13,14 @@ const env = (name: string) => (process.env[name] ?? '').trim();
 
 /**
  * Destination URLs. A Vercel env var overrides; otherwise the confirmed link below is used.
- * Confirmed by Siamak, 10 Nov 2026: intake review → https://nexterai.agency/booking
+ * Confirmed by Siamak, 10 Nov 2026: intake review and Snapshot review → https://nexterai.agency/booking
  */
+const AGENCY_BOOKING = 'https://nexterai.agency/booking';
 function destinations(): Record<DestinationId, string> {
   return {
     governanceCall: env('NEXT_STEP_GOVERNANCE_CALL_URL') || env('CALENDLY_BOOKING_URL'),
-    intakeReview:   env('NEXT_STEP_INTAKE_REVIEW_URL') || 'https://nexterai.agency/booking',
-    snapshotReview: env('NEXT_STEP_SNAPSHOT_REVIEW_URL') || env('CALENDLY_BOOKING_URL'),
+    intakeReview:   env('NEXT_STEP_INTAKE_REVIEW_URL') || AGENCY_BOOKING,
+    snapshotReview: env('NEXT_STEP_SNAPSHOT_REVIEW_URL') || AGENCY_BOOKING,
     webinar:        env('NEXT_STEP_WEBINAR_URL'),
     skool:          env('NEXT_STEP_SKOOL_URL'),
     courseAiLaw:    env('NEXT_STEP_COURSE_AI_LAW_URL'),
