@@ -7,11 +7,11 @@ import { absoluteUrl } from '@/lib/urls';
 
 // Sender: emails go out as "Nexter AI Agency" from the verified mail.nexterai.agency
 // domain (decided 10 Nov 2026). RESEND_FROM_NAME / RESEND_FROM_ADDRESS override if set.
-// Replies go to the contact inbox, so "reply to this email" reaches a person.
+// Replies go to services@nexterai.agency, so "reply to this email" reaches a person.
 const FROM_NAME = (process.env.RESEND_FROM_NAME ?? '').trim() || 'Nexter AI Agency';
 const FROM_EMAIL = (process.env.RESEND_FROM_ADDRESS ?? '').trim() || 'snapshot@mail.nexterai.agency';
 const FROM_ADDRESS = `${FROM_NAME} <${FROM_EMAIL}>`;
-const REPLY_TO = SITE.contactEmail;
+const REPLY_TO = SITE.replyToEmail;
 
 const NAVY = '#1a3a6b';
 const GOLD = '#B8902A';
