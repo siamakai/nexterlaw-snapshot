@@ -7,8 +7,9 @@ const env = (name: string): string => (process.env[name] ?? '').trim();
 
 export const SITE = {
   appUrl: env('NEXT_PUBLIC_APP_URL') || 'https://snapshotapp.nexterlaw.com',
-  contactEmail: 'hello@nexterlaw.com', // already used in the live app's error messages
-  // Where replies to Snapshot emails go (decided 10 Nov 2026).
+  // Contact address for the whole Snapshot: error messages, fallback "contact us" links,
+  // and replies to Snapshot emails (decided 10 Nov 2026).
+  contactEmail: 'services@nexterai.agency',
   replyToEmail: 'services@nexterai.agency',
   privacyVersion: env('NEXT_PUBLIC_PRIVACY_VERSION') || '1.0',
   // [CONFIRM #8] Privacy notice URL. Until set, the link opens an email to the contact address.

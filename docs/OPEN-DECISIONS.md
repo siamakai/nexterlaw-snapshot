@@ -23,7 +23,7 @@ Where a default was needed to finish the build, it follows the spec's recommenda
 | 5 | Intake Opportunity thresholds; "Just me" size | 🔧 Spec thresholds (`src/lib/intake.ts`); `SOLE` = "Just me" added, MICRO relabelled "2–4" |
 | 6 | Brand for 2–20 staff with no intake gap | 🔧 Nexter AI Agency (`src/config/next-steps.ts`, one line) |
 | 7 | Global: who reviews/approves; first countries for notes | ⏳ Review screen built (`/admin/global-submissions/[id]`); notes go in `content/jurisdictions/index.ts` (empty) |
-| 8 | Privacy notice URL and consent wording | ⏳ Set `NEXT_PUBLIC_PRIVACY_URL`; until then the link opens an email to hello@nexterlaw.com. Consent wording is the spec's |
+| 8 | Privacy notice URL and consent wording | ⏳ Set `NEXT_PUBLIC_PRIVACY_URL`; until then the link opens an email to services@nexterai.agency. Consent wording is the spec's |
 | 9 | Booking, Skool, course, webinar URLs | ⏳ Set the `NEXT_STEP_*` and `RESOURCE_*` env vars (see V2-REPORT). Unset links open an email instead of breaking |
 | 10 | Follow-ups: in the app or GoHighLevel | 🔧 GoHighLevel (spec recommendation): CRM tags carry everything a workflow needs. Day-3/7 emails remain written but unscheduled |
 | 11 | Who reviews the KB references, by when | ⏳ `docs/KB-REVIEW.md` is ready (35 entries). Until references are approved, reports name instruments without pinpoint numbers |
@@ -34,10 +34,10 @@ Where a default was needed to finish the build, it follows the spec's recommenda
 |---|---|---|
 | N1 | Show score before the details form | ⏳ Not built (spec order kept: questions → intake → details → results). Easy to add later |
 | N2 | Extra intake questions (timeline, biggest barrier) | ⏳ Not built |
-| N3 | "Reply to this email" from a no-reply address | 🔧 Reply-to is now hello@nexterlaw.com. Override the sender with `RESEND_FROM_ADDRESS` / `RESEND_FROM_NAME` |
+| N3 | "Reply to this email" from a no-reply address | 🔧 Reply-to is now services@nexterai.agency. Override the sender with `RESEND_FROM_ADDRESS` / `RESEND_FROM_NAME` |
 | N4 | EU AI Act content when EU = "Not sure" | ⏳ Unchanged (included). Routing treats only "Yes" as EU |
 | N5 | Rate limiter when Upstash is down | 🔧 Fails open and logs |
-| N6 | Contact address on error messages | 🔧 hello@nexterlaw.com |
+| N6 | Contact address on error messages | 🔧 services@nexterai.agency |
 | N7 | Proposals P3–P10 | ⏳ Not built, except: phone layout fixes, and showing the score early on the building screen |
 | N8 | One Lead per email or per submission | ⏳ Unchanged (one per email, latest details win; consent reflects the latest choice) |
 | N9 | EU question optional (spec) vs required | 🔧 Kept **required**: leaving it blank would silently add or drop EU AI Act content |
