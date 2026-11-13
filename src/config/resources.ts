@@ -5,6 +5,7 @@
 
 import type { DimensionKey } from '@/lib/constants';
 import { linkOrContact } from './site';
+import { LINKS } from './next-steps';
 
 export type ResourceType = 'course' | 'community' | 'webinar' | 'podcast';
 
@@ -27,7 +28,7 @@ export const RESOURCES: readonly Resource[] = [
     dimensions: ['accountability', 'usageGovernance', 'explainability', 'compliance'], urlEnv: 'RESOURCE_COURSE_RESPONSIBLE_AI_URL' },
   { id: 'course-ai-law', type: 'course', title: 'AI & Law (course)',
     description: 'AI in legal practice: research, drafting, compliance and client management, with ethical rigour.',
-    dimensions: ['compliance', 'reliability', 'rights', 'transparency'], urlEnv: 'NEXT_STEP_COURSE_AI_LAW_URL' },
+    dimensions: ['compliance', 'reliability', 'rights', 'transparency'], urlEnv: 'NEXT_STEP_COURSE_AI_LAW_URL', fallbackUrl: LINKS.courseAiLaw },
   { id: 'course-ai-business', type: 'course', title: 'AI for Business (course)',
     description: 'Practical AI tools for teams, with no technical background needed.',
     dimensions: ['literacy'], urlEnv: 'RESOURCE_COURSE_AI_BUSINESS_URL' },
@@ -36,10 +37,10 @@ export const RESOURCES: readonly Resource[] = [
     dimensions: ['rights'], urlEnv: 'RESOURCE_COURSE_WHO_OWNS_URL' },
   { id: 'skool-club', type: 'community', title: 'Nexter AI Business Club (Skool)',
     description: 'Community lessons and live sessions on putting AI to work safely.',
-    dimensions: ['literacy', 'usageGovernance'], urlEnv: 'NEXT_STEP_SKOOL_URL' },
+    dimensions: ['literacy', 'usageGovernance'], urlEnv: 'NEXT_STEP_SKOOL_URL', fallbackUrl: LINKS.skoolClub },
   { id: 'webinar-firm-ready', type: 'webinar', title: 'Webinar recording: Is Your Law Firm Ready for AI?',
     description: 'AI readiness, chatbot intake and automated follow-up for law firms.',
-    dimensions: ['literacy', 'intake'], urlEnv: 'RESOURCE_WEBINAR_RECORDING_URL' },
+    dimensions: ['literacy', 'intake'], urlEnv: 'RESOURCE_WEBINAR_RECORDING_URL', fallbackUrl: LINKS.webinars },
   { id: 'podcast-kerry-underwood', type: 'podcast', title: 'Podcast: AI as a tool, not a master (Kerry Underwood)',
     description: 'Keeping professional judgement in charge of AI output.',
     dimensions: ['reliability', 'explainability'], urlEnv: 'RESOURCE_PODCAST_UNDERWOOD_URL', fallbackUrl: PODCAST_CHANNEL },

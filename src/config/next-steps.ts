@@ -12,18 +12,23 @@ type DestinationId = 'governanceCall' | 'intakeReview' | 'snapshotReview' | 'web
 const env = (name: string) => (process.env[name] ?? '').trim();
 
 /**
- * Destination URLs. A Vercel env var overrides; otherwise the confirmed link below is used.
- * Confirmed by Siamak, 10 Nov 2026: intake review and Snapshot review → https://nexterai.agency/booking
+ * Confirmed links (Siamak, 10 and 13 Nov 2026). A Vercel env var overrides any of them.
  */
-const AGENCY_BOOKING = 'https://nexterai.agency/booking';
+export const LINKS = {
+  agencyBooking: 'https://nexterai.agency/booking',
+  webinars: 'https://nexterai.agency/webinars',
+  skoolClub: 'https://www.skool.com/ai-for-lawyers-2131',
+  courseAiLaw: 'https://ai.x.law.nexterlaw.com/',
+} as const;
+
 function destinations(): Record<DestinationId, string> {
   return {
     governanceCall: env('NEXT_STEP_GOVERNANCE_CALL_URL') || env('CALENDLY_BOOKING_URL'),
-    intakeReview:   env('NEXT_STEP_INTAKE_REVIEW_URL') || AGENCY_BOOKING,
-    snapshotReview: env('NEXT_STEP_SNAPSHOT_REVIEW_URL') || AGENCY_BOOKING,
-    webinar:        env('NEXT_STEP_WEBINAR_URL'),
-    skool:          env('NEXT_STEP_SKOOL_URL'),
-    courseAiLaw:    env('NEXT_STEP_COURSE_AI_LAW_URL'),
+    intakeReview:   env('NEXT_STEP_INTAKE_REVIEW_URL') || LINKS.agencyBooking,
+    snapshotReview: env('NEXT_STEP_SNAPSHOT_REVIEW_URL') || LINKS.agencyBooking,
+    webinar:        env('NEXT_STEP_WEBINAR_URL') || LINKS.webinars,
+    skool:          env('NEXT_STEP_SKOOL_URL') || LINKS.skoolClub,
+    courseAiLaw:    env('NEXT_STEP_COURSE_AI_LAW_URL') || LINKS.courseAiLaw,
   };
 }
 
