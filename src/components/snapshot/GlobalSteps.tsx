@@ -1,7 +1,7 @@
 'use client';
 
 import { useState } from 'react';
-import { SELF_ASSESSMENT_ANSWERS, type DimensionKey } from '@/lib/constants';
+import { SELF_ASSESSMENT_ANSWERS } from '@/lib/constants';
 import { GLOBAL_COUNTRIES, COUNTRIES_WITH_REGIONS, GLOBAL_PRACTICE_AREAS, GLOBAL_FIRM_SIZE_OPTIONS } from '@/lib/global-jurisdictions';
 import { EMAIL_RE, isLikelyWebsite } from '@/lib/validation';
 import { privacyHref, SITE } from '@/config/site';
@@ -11,19 +11,7 @@ import { TextField, CheckTile, ConsentBox, EmailWarning } from './fields';
 import { ANSWER_STYLE, GOLD, R_BODY, R_BORDER, R_CREAM, R_INPUT } from './theme';
 import type { Consent } from './UkDetails';
 
-// Universal wording from the NexterLaw Global Snapshot spec (unchanged from the live app).
-export const GLOBAL_QUESTION_OVERRIDES: Partial<Record<DimensionKey, string>> = {
-  compliance: "Can you demonstrate compliance with your jurisdiction's legal requirements for AI use?",
-  literacy: 'Does your team have training on AI capabilities and limitations?',
-  explainability: 'Can you explain how AI assisted a legal decision (to a client or court)?',
-  accountability: 'Is there a designated person responsible for AI oversight?',
-  rights: 'Do you have processes to respect client data rights (deletion, opt-out, etc.)?',
-  transparency: 'Do you disclose AI use to clients?',
-  reliability: 'Do you test AI outputs before using them in client work?',
-  usageGovernance: 'Do you have a written policy on which AI tools are permitted?',
-  security: 'Do you have data security and confidentiality controls for AI?',
-  traceability: 'Can you audit which AI was used on a given matter?',
-};
+export { GLOBAL_QUESTION_OVERRIDES } from '@/lib/global-questions';
 
 const selectStyle: React.CSSProperties = {
   border: `1px solid ${R_BORDER}`, borderRadius: 2, backgroundColor: R_INPUT, color: R_CREAM, padding: '10px 12px', fontSize: '0.875rem', width: '100%',

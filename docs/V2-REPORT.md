@@ -41,7 +41,7 @@ Same navy/gold identity, Playfair headings, hero, cards and dark results page. V
 | `NEXT_PUBLIC_PRIVACY_URL` | Privacy notice link | Strongly recommended |
 | `NEXT_STEP_GOVERNANCE_CALL_URL`, `NEXT_STEP_INTAKE_REVIEW_URL`, `NEXT_STEP_SNAPSHOT_REVIEW_URL`, `NEXT_STEP_WEBINAR_URL`, `NEXT_STEP_SKOOL_URL`, `NEXT_STEP_COURSE_AI_LAW_URL` | Next-step buttons (unset → email link) | Yes, before the webinar |
 | `RESOURCE_COURSE_RESPONSIBLE_AI_URL`, `RESOURCE_COURSE_AI_BUSINESS_URL`, `RESOURCE_COURSE_WHO_OWNS_URL`, `RESOURCE_WEBINAR_RECORDING_URL`, `RESOURCE_PODCAST_*_URL` (UNDERWOOD, WITHANE, WAINWRIGHT, SHAIRE, MACLEAN, ANGOOD, BUIE, HOLDEN) | 90-day-plan links (podcasts fall back to the YouTube channel) | Recommended |
-| `TEAM_NOTIFICATION_EMAIL` | Global submissions + failed-report alerts | Yes |
+| `TEAM_INBOX_EMAIL` | Optional override for team emails (Global submissions + failed-report alerts). Default services@nexterai.agency; `TEAM_NOTIFICATION_EMAIL` is no longer read | No |
 | `GHL_MODE` (`mock` default / `live` / `off`), `GHL_WEBHOOK_URL`, `GHL_API_KEY` | CRM sync | `live` only after GO |
 | `REPORT_MODEL` | Switch model after the comparison | Optional |
 | `NEXT_PUBLIC_GLOBAL_SHOW_SCORE`, `NEXT_PUBLIC_GLOBAL_WAITLIST`, `NEXT_PUBLIC_RENAME_RIGHTS`, `NEXT_PUBLIC_SAMPLE_REPORT_URL`, `NEXT_PUBLIC_CREATOR_PHOTO_URL` | Switches (see OPEN-DECISIONS) | Optional |

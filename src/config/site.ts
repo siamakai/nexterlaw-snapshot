@@ -11,6 +11,9 @@ export const SITE = {
   // and replies to Snapshot emails (decided 10 Nov 2026).
   contactEmail: 'services@nexterai.agency',
   replyToEmail: 'services@nexterai.agency',
+  // Who gets the team emails: new Global submissions and failed-report alerts (decided 13 Nov 2026).
+  // TEAM_INBOX_EMAIL (comma-separated) overrides it.
+  teamInboxEmail: env('TEAM_INBOX_EMAIL') || 'services@nexterai.agency',
   privacyVersion: env('NEXT_PUBLIC_PRIVACY_VERSION') || '1.0',
   // [CONFIRM #8] Privacy notice URL. Until set, the link opens an email to the contact address.
   privacyUrl: env('NEXT_PUBLIC_PRIVACY_URL'),

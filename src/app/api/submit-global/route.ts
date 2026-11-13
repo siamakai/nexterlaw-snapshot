@@ -158,17 +158,7 @@ export async function POST(request: Request) {
       console.error('[submit-global] Acknowledgement email failed:', err);
     }
 
-    await sendGlobalSubmissionNotification({
-      submissionId: submission.id,
-      contactName: contact.contactName,
-      firmName: contact.firmName,
-      workEmail: contact.workEmail,
-      country: jurisdiction.country,
-      stateProvince: jurisdiction.stateProvince,
-      primaryPracticeArea: firmProfile.primaryPracticeArea,
-      dueText: dueText ?? 'waitlist',
-      isTest,
-    }).catch(err => console.error('[submit-global] Team notification failed:', err));
+    await sendGlobalSubmissionNotification({ submission, dueText: dueText ?? undefined }).catch(err => console.error('[submit-global] Team notification failed:', err));
 
     await syncToCrm({
       event: 'global_submitted',

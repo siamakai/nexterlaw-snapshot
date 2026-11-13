@@ -4,6 +4,11 @@ import type { ResolvedNextStep } from '@/config/next-steps';
 import { SITE } from '@/config/site';
 import { escapeHtml } from '@/lib/security/tokens';
 import { absoluteUrl } from '@/lib/urls';
+import type { GlobalSubmission } from '@prisma/client';
+import { CLEAR_TRUST_DIMENSIONS, type DimensionKey } from '@/lib/constants';
+import { GLOBAL_QUESTION_OVERRIDES } from '@/lib/global-questions';
+import { GLOBAL_FIRM_SIZE_OPTIONS, GLOBAL_PRACTICE_AREAS } from '@/lib/global-jurisdictions';
+import { INTAKE_QUESTIONS, INTAKE_RATING_LABEL, intakeLabel, type IntakeRating } from '@/lib/intake';
 
 // Sender: emails go out as "Nexter AI Agency" from the verified mail.nexterai.agency
 // domain (decided 10 Nov 2026). RESEND_FROM_NAME / RESEND_FROM_ADDRESS override if set.
@@ -176,13 +181,13 @@ export async function sendGlobalReportReady(o: { to: string; contactName: string
 
 function teamEmails(): string[] {
   // Comma-separated so more than one team inbox can be notified.
-  return (process.env.TEAM_NOTIFICATION_EMAIL ?? '').split(',').map(e => e.trim()).filter(Boolean);
+  return SITE.teamInboxEmail.split(',').map(e => e.trim()).filter(Boolean);
 }
 
 export async function sendTeamAlert(subject: string, text: string) {
   const to = teamEmails();
   if (to.length === 0) {
-    console.warn('[email] TEAM_NOTIFICATION_EMAIL not configured — skipping team alert:', subject);
+    console.warn('[email] No team inbox configured — skipping team alert:', subject);
     return null;
   }
   const { data, error } = await send({ to, subject, html: shell('NexterLaw · Snapshot alert', escapeHtml(subject), p(escapeHtml(text)), false) });
@@ -191,44 +196,102 @@ export async function sendTeamAlert(subject: string, text: string) {
 }
 
 export interface GlobalSubmissionNotificationOptions {
-  submissionId: string;
-  contactName: string;
-  firmName: string;
-  workEmail: string;
-  country: string;
-  stateProvince: string;
-  primaryPracticeArea: string;
+  submission: GlobalSubmission;
   dueText?: string;
-  isTest?: boolean;
 }
 
-function globalNotificationHtml(o: GlobalSubmissionNotificationOptions): string {
+const ANSWER_LABEL: Record<string, string> = { YES: 'Yes', NO: 'No', NOT_SURE: 'Not sure' };
+const ANSWER_COLOUR: Record<string, string> = { YES: '#15803d', NO: '#b91c1c', NOT_SURE: '#b45309' };
+const DIMENSION_FIELD: Record<DimensionKey, keyof GlobalSubmission> = {
+  compliance: 'answerCompliance', literacy: 'answerLiteracy', explainability: 'answerExplainability',
+  accountability: 'answerAccountability', rights: 'answerRights', transparency: 'answerTransparency',
+  reliability: 'answerReliability', usageGovernance: 'answerUsageGovernance', security: 'answerSecurity',
+  traceability: 'answerTraceability',
+};
+
+const practiceAreaLabel = (slug: string) => GLOBAL_PRACTICE_AREAS.find(a => a.slug === slug)?.label ?? slug;
+const firmSizeLabel = (value: string) => GLOBAL_FIRM_SIZE_OPTIONS.find(o => o.value === value)?.label ?? value;
+
+/** The team email for a new Global submission: every answer the firm gave, so the team can start the report. */
+export function globalNotificationHtml({ submission: s, dueText }: GlobalSubmissionNotificationOptions): string {
   // Everything below comes from a public form: escape it before putting it in HTML.
-  const region = o.stateProvince ? `, ${escapeHtml(o.stateProvince)}` : '';
-  const row = (label: string, value: string, mono = false) =>
-    `<tr><td style="padding:4px 0;color:#6b7280;width:130px;">${label}</td><td style="padding:4px 0;${mono ? 'font-family:monospace;font-size:12px;' : 'font-weight:600;'}">${value}</td></tr>`;
-  return shell('NexterLaw · Global Snapshot', `New ${o.isTest ? 'TEST ' : ''}manual-report submission`, `
-    <table cellpadding="0" cellspacing="0" style="width:100%;font-size:13px;color:#374151;">
-      ${row('Contact', escapeHtml(o.contactName))}
-      ${row('Firm', escapeHtml(o.firmName))}
-      ${row('Email', escapeHtml(o.workEmail))}
-      ${row('Country', `${escapeHtml(o.country)}${region}`)}
-      ${row('Practice area', escapeHtml(o.primaryPracticeArea))}
-      ${o.dueText ? row('Report due', escapeHtml(o.dueText)) : ''}
-      ${row('Submission ID', escapeHtml(o.submissionId), true)}
-    </table>
-    <p style="text-align:center;margin:24px 0 0;">${button(absoluteUrl(`/admin/global-submissions/${o.submissionId}`), 'Open in Admin')}</p>`, false);
+  const text = (v: string | null | undefined) =>
+    v && v.trim() ? escapeHtml(v).replace(/\n/g, '<br>') : '<span style="color:#9ca3af;font-weight:400;">—</span>';
+  const answer = (v: string | null | undefined) =>
+    v ? `<span style="color:${ANSWER_COLOUR[v] ?? '#374151'};font-weight:700;">${escapeHtml(ANSWER_LABEL[v] ?? v)}</span>` : text(null);
+  const row = (label: string, value: string) =>
+    `<tr><td style="padding:5px 12px 5px 0;color:#6b7280;width:45%;vertical-align:top;">${escapeHtml(label)}</td><td style="padding:5px 0;vertical-align:top;font-weight:600;">${value}</td></tr>`;
+  const section = (title: string, rows: string[]) => `
+    <p style="margin:22px 0 6px;font-size:11px;color:${NAVY};text-transform:uppercase;letter-spacing:2px;font-weight:700;border-bottom:1px solid #e5e7eb;padding-bottom:4px;">${escapeHtml(title)}</p>
+    <table cellpadding="0" cellspacing="0" style="width:100%;font-size:13px;color:#374151;">${rows.join('')}</table>`;
+
+  const primaryArea = s.primaryPracticeArea === 'other' && s.primaryPracticeAreaOther
+    ? `Other: ${s.primaryPracticeAreaOther}` : practiceAreaLabel(s.primaryPracticeArea);
+  const intake = { outOfHours: s.intakeOutOfHours, replySpeed: s.intakeReplySpeed, volume: s.intakeVolume, caseSystem: s.intakeCaseSystem };
+  const rating = s.intakeRating as IntakeRating | null;
+  const websiteHref = s.firmWebsite && (/^https?:\/\//i.test(s.firmWebsite) ? s.firmWebsite : `https://${s.firmWebsite}`);
+  const website = websiteHref
+    ? `<a href="${escapeHtml(websiteHref)}" style="color:${NAVY};">${escapeHtml(s.firmWebsite ?? '')}</a>` : text(null);
+  const score = s.scoreHeadline != null
+    ? ` (score ${Math.round(s.scoreHeadline)}/100${s.scoreBand ? `, ${s.scoreBand.replace('_', ' ')}` : ''})` : '';
+
+  return shell('NexterLaw · Global Snapshot', `New ${s.isTest ? 'TEST ' : ''}Global submission: ${escapeHtml(s.firmName)}`, `
+    ${p(`Report due: <strong>${escapeHtml(dueText ?? 'no date (waitlist)')}</strong>. An AI first draft is being prepared in Admin: review it, edit it, then click Approve &amp; send.`)}
+    <p style="text-align:center;margin:8px 0 0;">${button(absoluteUrl(`/admin/global-submissions/${s.id}`), 'Open in Admin')}</p>
+    ${section('Contact', [
+      row('Name', text(s.contactName)),
+      row('Firm', text(s.firmName)),
+      row('Website', website),
+      row('Email', `<a href="mailto:${escapeHtml(s.workEmail)}" style="color:${NAVY};">${escapeHtml(s.workEmail)}</a>`),
+      row('Phone', text(s.phone)),
+    ])}
+    ${section('Jurisdiction', [
+      row('Country', text(s.country)),
+      row('State / province', text(s.stateProvince)),
+      row('Other states / provinces', text(s.secondaryStates.join(', '))),
+      row('Regulatory body', text(s.regulatoryBody)),
+      row('Other jurisdiction', text(s.secondaryJurisdiction)),
+    ])}
+    ${section('Firm profile', [
+      row('Firm size', text(firmSizeLabel(s.firmSize))),
+      row('Main practice area', text(primaryArea)),
+      row('Other practice areas', text(s.secondaryPracticeAreas.map(practiceAreaLabel).join(', '))),
+    ])}
+    ${section('Current AI use', [
+      row('Using AI now?', answer(s.currentlyUsingAi)),
+      row('Tools in use', text(s.aiToolsInUse)),
+      row('Written AI policy?', answer(s.hasAiPolicy)),
+      row('Clients asked about AI?', answer(s.clientsAskedAboutAi)),
+    ])}
+    ${section(`CLEAR TRUST answers${score}`, CLEAR_TRUST_DIMENSIONS.map(d => row(
+      `${d.letter} · ${d.name}: ${GLOBAL_QUESTION_OVERRIDES[d.key] ?? d.question}`,
+      answer(s[DIMENSION_FIELD[d.key]] as string | null),
+    )))}
+    ${section(`Client intake${rating ? ` (${INTAKE_RATING_LABEL[rating] ?? rating})` : ''}`, INTAKE_QUESTIONS.map(q => row(
+      q.question,
+      text(intake[q.key] ? intakeLabel(q.key, intake[q.key]) : null),
+    )))}
+    ${section('In their words', [
+      row('Biggest concern', text(s.biggestConcern)),
+      row('What would help most', text(s.whatWouldHelpMost)),
+    ])}
+    ${section('Admin', [
+      row('Marketing consent', s.marketingConsent ? 'Yes' : 'No'),
+      row('Submitted', escapeHtml(`${s.createdAt.toISOString().replace('T', ' ').slice(0, 16)} UTC`)),
+      row('Submission ID', `<span style="font-family:monospace;font-size:12px;font-weight:400;">${escapeHtml(s.id)}</span>`),
+    ])}`, false);
 }
 
 export async function sendGlobalSubmissionNotification(o: GlobalSubmissionNotificationOptions) {
   const to = teamEmails();
   if (to.length === 0) {
-    console.warn('[email] TEAM_NOTIFICATION_EMAIL not configured — skipping Global submission notification.');
+    console.warn('[email] No team inbox configured — skipping Global submission notification.');
     return null;
   }
+  const s = o.submission;
   const { data, error } = await send({
     to,
-    subject: `New ${o.isTest ? 'TEST ' : ''}Global Snapshot submission — ${o.firmName} (${o.country})`,
+    subject: `New ${s.isTest ? 'TEST ' : ''}Global Snapshot submission — ${s.firmName} (${s.country})`,
     html: globalNotificationHtml(o),
   });
   if (error) throw new Error(`Resend error (Global notification): ${error.message}`);
